@@ -468,25 +468,32 @@ def auto_redact():
     def get_boxes(fields):
         boxes = []
         ai_fields_path = analyze_path + "_ai_fields.json"
-        ai_lookup = {}
         if os.path.exists(ai_fields_path):
             with open(ai_fields_path) as f:
-                for af in json.load(f):
-                    if "box" in af:
-                        ai_lookup[af["key"]] = af["box"]
-        for fk in fields:
-            if fk in ai_lookup:
-                b = ai_lookup[fk]
-                boxes.append((int(b["x1"] * w), int(b["y1"] * h),
-                              int(b["x2"] * w), int(b["y2"] * h)))
-            elif fk in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
-                boxes.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
-        if not boxes:
-            boxes.append((int(w * 0.4), int(h * 0.3), int(w * 0.9), int(h * 0.9)))
+                ai_fields = json.load(f)
+            for fk in fields:
+                match = [af for af in ai_fields if af.get("key") == fk and "box" in af]
+                if match:
+                    b = match[0]["box"]
+                    boxes.append((int(b["x1"] * w), int(b["y1"] * h),
+                                  int(b["x2"] * w), int(b["y2"] * h)))
         return boxes
 
     redact_boxes = get_boxes(excessive_keys)
+    if not redact_boxes:
+        from shutil import copyfile
+        result_path = filepath + "_redacted.png"
+        img.save(result_path)
+        return jsonify({
+            "success": True,
+            "result_url": url_for('get_result', filename=os.path.basename(result_path)),
+            "document_name": doc_type.name_es,
+            "redacted_fields": [],
+            "preserved_fields": preserved_keys,
+            "download_name": f"anonimizado_{doc_type.code}.png",
+            "warning": "No se detectaron campos redactables por IA en esta cara del documento.",
+        })
+
     result_img = apply_minimization(analyze_path, doc_type, excessive_keys, mode=mode, override_boxes=redact_boxes)
     result_path = filepath + "_redacted.png"
     result_img.save(result_path)
