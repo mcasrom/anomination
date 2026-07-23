@@ -8,7 +8,8 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
 GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_FALLBACK_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-3-flash-preview"]
 
 DETECT_VISION_PROMPT = (
     "Analiza esta imagen de un documento de identidad (DNI, NIE, pasaporte, carnet de conducir, "
@@ -138,11 +139,13 @@ def _gemini_available():
         return False
 
 
-def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
+def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str, model_name: str = None) -> dict:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
+    if model_name is None:
+        model_name = GEMINI_MODEL
     model = genai.GenerativeModel(
-        GEMINI_MODEL,
+        model_name,
         generation_config={"response_mime_type": "application/json"},
         safety_settings={
             "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
@@ -163,6 +166,21 @@ def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> 
     return _parse_json_response(text)
 
 
+def _gemini_chat_with_fallback(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
+    models_to_try = [GEMINI_MODEL] + [m for m in GEMINI_FALLBACK_MODELS if m != GEMINI_MODEL]
+    last_error = ""
+    for mn in models_to_try:
+        try:
+            return _gemini_chat_completion(image_bytes, prompt, mime_type, model_name=mn)
+        except Exception as e:
+            err = str(e)
+            last_error = err
+            if "quota" in err.lower() or "resource_exhausted" in err.lower():
+                continue
+            raise
+    raise ValueError(f"Todos los modelos agotados. {last_error}")
+
+
 # -- Public API --
 
 def ai_available():
@@ -171,10 +189,12 @@ def ai_available():
 
 def detect_document_with_ai(image_bytes: bytes, mime_type: str = "image/png",
                              ocr_text: str = None):
+    last_error = ""
     if _gemini_available():
         try:
-            return _gemini_chat_completion(image_bytes, DETECT_VISION_PROMPT, mime_type)
+            return _gemini_chat_with_fallback(image_bytes, DETECT_VISION_PROMPT, mime_type)
         except Exception as e:
+            last_error = str(e)
             if ocr_text and _groq_available():
                 return _groq_chat_completion(TEXT_DETECT_PROMPT, ocr_text=ocr_text)
 
@@ -185,7 +205,7 @@ def detect_document_with_ai(image_bytes: bytes, mime_type: str = "image/png",
             if ocr_text:
                 return _groq_chat_completion(TEXT_DETECT_PROMPT, ocr_text=ocr_text)
 
-    return None
+    return {"error": last_error or "No hay proveedor de IA disponible (sin API key configurada)."}
 
 
 def suggest_redactions_with_ai(image_bytes: bytes, mime_type: str = "image/png",
@@ -202,7 +222,7 @@ def suggest_redactions_with_ai(image_bytes: bytes, mime_type: str = "image/png",
 
     if _gemini_available():
         try:
-            return _gemini_chat_completion(image_bytes, REDACT_PROMPT, mime_type)
+            return _gemini_chat_with_fallback(image_bytes, REDACT_PROMPT, mime_type)
         except Exception:
             pass
 

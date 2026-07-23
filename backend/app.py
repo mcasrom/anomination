@@ -437,7 +437,11 @@ def auto_redact():
     ai_result = detect_document_with_ai(img_bytes)
 
     if not ai_result or not ai_result.get("fields"):
-        return jsonify({"success": False, "error": "La IA no pudo identificar campos en esta imagen. Prueba con otra orientación o mejor luz."}), 400
+        err_msg = "La IA no pudo identificar campos en esta imagen. "
+        err_msg += "Prueba con otra orientación, mejor luz, o un documento más nítido."
+        if ai_result and ai_result.get("error"):
+            err_msg = ai_result["error"]
+        return jsonify({"success": False, "error": err_msg}), 400
 
     img = Image.open(analyze_path)
     w, h = img.size
