@@ -1,0 +1,16 @@
+services:
+  anonimation:
+    build:
+      context: ../backend
+      dockerfile: ../deploy/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+
+volumes:
+  uploads:

@@ -1,0 +1,47 @@
+{
+  "name": "Anonymation — Minimización RGPD",
+  "short_name": "Anonymation",
+  "description": "Anonimiza DNIs, facturas, contratos y documentos oficiales. Cumple con el principio de minimización de datos del RGPD Art. 5.",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0f0f13",
+  "theme_color": "#6c5ce7",
+  "categories": ["productivity", "utilities", "security"],
+  "lang": "es",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/static/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/screenshot.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Vista principal de Anonymation"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Nuevo documento",
+      "short_name": "Anonimizar",
+      "description": "Subir y anonimizar un documento",
+      "url": "/"
+    }
+  ]
+}
