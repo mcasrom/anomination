@@ -203,16 +203,17 @@ def analyze():
             } for e in deduped]
             json.dump(serializable, f)
 
-    for key in excessive_keys:
-        if key not in preview_boxes:
-            from document_analyzer import FIELD_BOXES
-            if key in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
-                preview_boxes[key] = {
-                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
-                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
-                    "w": img_w, "h": img_h,
-                }
+    if not ai_fields_data:
+        for key in excessive_keys:
+            if key not in preview_boxes:
+                from document_analyzer import FIELD_BOXES
+                if key in FIELD_BOXES:
+                    fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
+                    preview_boxes[key] = {
+                        "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                        "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                        "w": img_w, "h": img_h,
+                    }
 
     result = {
         "success": True,
@@ -270,6 +271,7 @@ def preview_boxes():
 
     boxes = {}
     ai_fields_path = analyze_path + "_ai_fields.json"
+    has_ai_fields = False
     if os.path.exists(ai_fields_path):
         with open(ai_fields_path) as f:
             ai_fields = json.load(f)
@@ -285,16 +287,18 @@ def preview_boxes():
                     "w": img_w,
                     "h": img_h,
                 }
-    for key in fields_to_show:
-        if key not in boxes:
-            from document_analyzer import FIELD_BOXES
-            if key in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
-                boxes[key] = {
-                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
-                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
-                    "w": img_w, "h": img_h,
-                }
+                has_ai_fields = True
+    if not has_ai_fields:
+        for key in fields_to_show:
+            if key not in boxes:
+                from document_analyzer import FIELD_BOXES
+                if key in FIELD_BOXES:
+                    fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
+                    boxes[key] = {
+                        "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                        "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                        "w": img_w, "h": img_h,
+                    }
 
     return jsonify({
         "success": True,
@@ -338,18 +342,21 @@ def redact():
         boxes_list = []
         ai_fields_path = analyze_path + "_ai_fields.json"
         ai_lookup = {}
+        ai_available_file = False
         if os.path.exists(ai_fields_path):
             with open(ai_fields_path) as f:
                 for af in json.load(f):
                     if "box" in af:
                         ai_lookup[af["key"]] = af["box"]
+            if ai_lookup:
+                ai_available_file = True
 
         for fk in fields:
             if fk in ai_lookup:
                 b = ai_lookup[fk]
                 boxes_list.append((int(b["x1"] * w), int(b["y1"] * h),
                                    int(b["x2"] * w), int(b["y2"] * h)))
-            elif fk in FIELD_BOXES:
+            elif not ai_available_file and fk in FIELD_BOXES:
                 fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
                 boxes_list.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
         if not boxes_list:
