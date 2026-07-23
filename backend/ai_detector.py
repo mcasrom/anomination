@@ -1,16 +1,16 @@
 import os
 import base64
 import json
-import urllib.request
-import urllib.error
+import requests
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-GROQ_MODEL = "llama-3.2-90b-vision-preview"
+GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
+GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
 GEMINI_MODEL = "gemini-flash-lite-latest"
 
-DETECT_PROMPT = (
+DETECT_VISION_PROMPT = (
     "Analiza esta imagen de un documento de identidad (DNI, NIE, pasaporte, carnet de conducir, "
     "tarjeta sanitaria, residencia, empadronamiento) o factura/documento oficial. "
     "Identifica el tipo de documento y las coordenadas de cada campo visible. "
@@ -33,6 +33,22 @@ DETECT_PROMPT = (
     "nombre de padres, lugar de nacimiento\n"
     "- Facturas: importes, datos bancarios, direcciones, números de factura\n"
     "- Contratos: datos personales no esenciales, firmas"
+)
+
+TEXT_DETECT_PROMPT = (
+    "Analiza el siguiente texto OCR extraído de un documento de identidad. "
+    "Identifica el tipo de documento y qué campos contiene. "
+    "Devuelve SOLO JSON válido con esta estructura:\n"
+    "{\n"
+    '  "document_type": "dni|nie|passport|driving_license|residence_card|health_card|padron|invoice|contract|other",\n'
+    '  "document_name": "nombre descriptivo en español",\n'
+    '  "confidence": 0.0-1.0,\n'
+    '  "fields": [\n'
+    '    {"key": "full_name", "label": "Nombre completo", "value": "texto extraído", "sensitive": true}\n'
+    "  ],\n"
+    '  "summary": "breve descripción"\n'
+    "}\n"
+    "Texto OCR:\n"
 )
 
 REDACT_PROMPT = (
@@ -66,34 +82,40 @@ def _groq_available():
     return bool(GROQ_API_KEY)
 
 
-def _groq_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
-    b64 = base64.b64encode(image_bytes).decode()
-    body = json.dumps({
-        "model": GROQ_MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}}
-                ]
-            }
-        ],
-        "temperature": 0.2,
-        "max_tokens": 2048,
-    }).encode()
+def _groq_chat_completion(prompt: str, image_bytes: bytes = None, mime_type: str = "image/png",
+                          ocr_text: str = None) -> dict:
+    if image_bytes is not None:
+        model = GROQ_VISION_MODEL
+        b64 = base64.b64encode(image_bytes).decode()
+        msg = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}}
+            ]
+        }
+    elif ocr_text is not None:
+        model = GROQ_TEXT_MODEL
+        msg = {"role": "user", "content": prompt + "\n" + ocr_text}
+    else:
+        return {"error": "No input provided", "document_type": None, "confidence": 0}
 
-    req = urllib.request.Request(
+    resp = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
-        data=body,
         headers={
             "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json",
         },
-        method="POST",
+        json={
+            "model": model,
+            "messages": [msg],
+            "temperature": 0.2,
+            "max_tokens": 2048,
+        },
+        timeout=30,
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read())
+    resp.raise_for_status()
+    data = resp.json()
     return _parse_json_response(data["choices"][0]["message"]["content"])
 
 
@@ -126,30 +148,36 @@ def ai_available():
     return _groq_available() or _gemini_available()
 
 
-def detect_document_with_ai(image_bytes: bytes, mime_type: str = "image/png"):
-    if _groq_available():
-        try:
-            return _groq_chat_completion(image_bytes, DETECT_PROMPT, mime_type)
-        except Exception as e:
-            fallback_err = f"Groq error: {e}"
-
+def detect_document_with_ai(image_bytes: bytes, mime_type: str = "image/png",
+                             ocr_text: str = None):
     if _gemini_available():
         try:
-            return _gemini_chat_completion(image_bytes, DETECT_PROMPT, mime_type)
+            return _gemini_chat_completion(image_bytes, DETECT_VISION_PROMPT, mime_type)
         except Exception as e:
-            return {"error": f"Gemini error: {e}", "document_type": None, "confidence": 0}
+            if ocr_text and _groq_available():
+                return _groq_chat_completion(TEXT_DETECT_PROMPT, ocr_text=ocr_text)
 
     if _groq_available():
-        return {"error": fallback_err, "document_type": None, "confidence": 0}
+        try:
+            return _groq_chat_completion(DETECT_VISION_PROMPT, image_bytes=image_bytes, mime_type=mime_type)
+        except Exception:
+            if ocr_text:
+                return _groq_chat_completion(TEXT_DETECT_PROMPT, ocr_text=ocr_text)
+
     return None
 
 
-def suggest_redactions_with_ai(image_bytes: bytes, mime_type: str = "image/png"):
+def suggest_redactions_with_ai(image_bytes: bytes, mime_type: str = "image/png",
+                                ocr_text: str = None):
     if _groq_available():
         try:
-            return _groq_chat_completion(image_bytes, REDACT_PROMPT, mime_type)
+            return _groq_chat_completion(REDACT_PROMPT, image_bytes=image_bytes, mime_type=mime_type)
         except Exception:
-            pass
+            if ocr_text:
+                try:
+                    return _groq_chat_completion(REDACT_PROMPT, ocr_text=ocr_text)
+                except Exception:
+                    pass
 
     if _gemini_available():
         try:

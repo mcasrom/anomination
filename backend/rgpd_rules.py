@@ -382,6 +382,64 @@ DOCUMENT_TYPES = {
     "padron": PADRON,
 }
 
+# Maps AI field keys to system field keys so AI results can be used
+# with FIELD_BOXES and RGPD rules.
+AI_KEY_MAP = {
+    "dni_number": "dni_number",
+    "dni": "dni_number",
+    "nie_number": "nie_number",
+    "card_number": "card_number",
+    "health_number": "health_number",
+    "full_name": "full_name",
+    "first_name": "full_name",
+    "surnames": "full_name",
+    "last_name": "full_name",
+    "address": "address",
+    "previous_address": "previous_address",
+    "dob": "dob",
+    "birth_date": "dob",
+    "fecha_nacimiento": "dob",
+    "gender": "gender",
+    "sex": "gender",
+    "sexo": "gender",
+    "father_name": "father_name",
+    "mother_name": "mother_name",
+    "signature": "signature",
+    "firma": "signature",
+    "nationality": "nationality",
+    "nacionalidad": "nationality",
+    "passport_number": "passport_number",
+    "pob": "pob",
+    "birth_place": "pob",
+    "lugar_nacimiento": "pob",
+    "height": "height",
+    "eye_color": "eye_color",
+    "license_number": "license_number",
+    "issuing_authority": "issuing_authority",
+    "authority": "authority",
+    "categories": "categories",
+    "issue_date": "issue_date",
+    "fecha_emision": "issue_date",
+    "emision": "issue_date",
+    "expiration_date": "expiration_date",
+    "expiry_date": "expiration_date",
+    "fecha_validez": "expiration_date",
+    "validez": "expiration_date",
+    "support_number": "dni_number",
+    "num_sop": "dni_number",
+    "num_soporte": "dni_number",
+    "photo": "photo",
+    "document_type": "document_type",
+}
+
+# List of AI keys that represent sub-fields of a composite field.
+# When mapped, their boxes should be merged into the target field.
+AI_COMPOSITE_KEYS = {"first_name", "surnames", "last_name"}
+
+
+def map_ai_key(ai_key: str) -> str | None:
+    return AI_KEY_MAP.get(ai_key)
+
 
 def get_document_type(code: str) -> DocumentType:
     return DOCUMENT_TYPES.get(code)

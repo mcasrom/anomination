@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, render_template, send_file, url_for
 from PIL import Image
 
 from document_analyzer import detect_document_type, apply_minimization, get_field_preview_boxes
-from rgpd_rules import DOCUMENT_TYPES, analyze_necessity
+from rgpd_rules import DOCUMENT_TYPES, analyze_necessity, map_ai_key, AI_COMPOSITE_KEYS
 from ai_detector import detect_document_with_ai, suggest_redactions_with_ai, ai_available
 from pdf_processor import (
     pdf_to_images, images_to_pdf, redact_pdf_page, redact_pdf_all_pages,
@@ -88,13 +88,15 @@ def analyze():
         page_count = 1
 
     ai_fields_data = None
-    ai_boxes = None
+    doc_type = None
 
     if ai_available():
         try:
             with open(analyze_path, 'rb') as f:
                 img_bytes = f.read()
-            ai_result = detect_document_with_ai(img_bytes)
+            from document_analyzer import _run_ocr
+            ocr_text = _run_ocr(Image.open(analyze_path))
+            ai_result = detect_document_with_ai(img_bytes, ocr_text=ocr_text)
             if ai_result and ai_result.get("document_type"):
                 from rgpd_rules import DOCUMENT_TYPES as DT
                 ai_doc_code = ai_result["document_type"]
@@ -128,20 +130,78 @@ def analyze():
     preview_boxes = {}
 
     if ai_fields_data:
+        mapped_fields = []
+        composite_buckets = {}
         for f in ai_fields_data:
-            key = f.get("key", "")
-            if key in excessive_keys and "box" in f:
-                b = f["box"]
-                preview_boxes[key] = {
-                    "x1": int(b["x1"] * img_w),
-                    "y1": int(b["y1"] * img_h),
-                    "x2": int(b["x2"] * img_w),
-                    "y2": int(b["y2"] * img_h),
-                    "w": img_w,
-                    "h": img_h,
-                }
+            ai_key = f.get("key", "")
+            sys_key = map_ai_key(ai_key)
+            if sys_key is None or "box" not in f:
+                continue
+            entry = {"sys_key": sys_key, "ai_key": ai_key, "box": f["box"]}
+            if ai_key in AI_COMPOSITE_KEYS:
+                composite_buckets.setdefault(sys_key, []).append(entry)
+            else:
+                mapped_fields.append(entry)
+
+        for sys_key, parts in composite_buckets.items():
+            if len(parts) == 1:
+                mapped_fields.append(parts[0])
+            else:
+                boxes = [p["box"] for p in parts]
+                xs = [b[f"{c}"] for b in boxes for c in ("x1", "x2")]
+                ys = [b[f"{c}"] for b in boxes for c in ("y1", "y2")]
+                merged = {"x1": min(xs), "y1": min(ys), "x2": max(xs), "y2": max(ys)}
+                mapped_fields.append({"sys_key": sys_key, "ai_key": "+".join(p["ai_key"] for p in parts), "box": merged})
+
+        is_absolute = bool(mapped_fields) and max(mapped_fields[0]["box"].get(k, 0) for k in ("x1", "x2", "y1", "y2")) > 1.5
+
+        exact_key_hits = {e["ai_key"] for e in mapped_fields if e["ai_key"] == e["sys_key"]}
+
+        preview_boxes_ai = {}
+        for entry in mapped_fields:
+            sys_key = entry["sys_key"]
+            if sys_key in preview_boxes_ai:
+                if entry["ai_key"] != sys_key and sys_key in exact_key_hits:
+                    continue
+            b = entry["box"]
+            if is_absolute:
+                bx1, by1, bx2, by2 = b["x1"], b["y1"], b["x2"], b["y2"]
+            else:
+                bx1 = int(b["x1"] * img_w)
+                by1 = int(b["y1"] * img_h)
+                bx2 = int(b["x2"] * img_w)
+                by2 = int(b["y2"] * img_h)
+            preview_boxes_ai[sys_key] = {
+                "x1": bx1, "y1": by1, "x2": bx2, "y2": by2, "w": img_w, "h": img_h,
+            }
+        for key, box in preview_boxes_ai.items():
+            if key in excessive_keys:
+                preview_boxes[key] = box
+
         with open(analyze_path + "_ai_fields.json", 'w') as f:
-            json.dump(ai_fields_data, f)
+            used_keys = set()
+            deduped = []
+            for e in mapped_fields:
+                sk = e["sys_key"]
+                if sk in used_keys:
+                    continue
+                if e["ai_key"] != sk:
+                    exact = [x for x in mapped_fields if x["sys_key"] == sk and x["ai_key"] == sk]
+                    if exact:
+                        continue
+                used_keys.add(sk)
+                deduped.append(e)
+            serializable = [{
+                "key": e["sys_key"],
+                "ai_key": e["ai_key"],
+                "box": {
+                    "x1": e["box"]["x1"] / (img_w if is_absolute else 1),
+                    "y1": e["box"]["y1"] / (img_h if is_absolute else 1),
+                    "x2": e["box"]["x2"] / (img_w if is_absolute else 1),
+                    "y2": e["box"]["y2"] / (img_h if is_absolute else 1),
+                } if is_absolute else e["box"],
+            } for e in deduped]
+            json.dump(serializable, f)
 
     for key in excessive_keys:
         if key not in preview_boxes:

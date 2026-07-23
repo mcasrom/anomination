@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+uploads/
+.env
+.git/
+.gitignore
+README.md
+ROADMAP.md
+tests/
+.pytest_cache/

@@ -8,27 +8,38 @@ from rgpd_rules import DOCUMENT_TYPES, DocumentType
 
 
 FIELD_BOXES = {
-    "dni_number": (0.15, 0.20, 0.45, 0.28),
-    "nie_number": (0.15, 0.20, 0.45, 0.28),
-    "card_number": (0.15, 0.20, 0.45, 0.28),
-    "health_number": (0.40, 0.25, 0.85, 0.35),
-    "address": (0.10, 0.55, 0.90, 0.68),
-    "previous_address": (0.10, 0.70, 0.90, 0.80),
-    "dob": (0.15, 0.32, 0.50, 0.42),
-    "gender": (0.55, 0.32, 0.70, 0.42),
-    "father_name": (0.10, 0.45, 0.50, 0.55),
-    "mother_name": (0.50, 0.45, 0.90, 0.55),
-    "signature": (0.55, 0.75, 0.95, 0.95),
-    "nationality": (0.10, 0.35, 0.50, 0.45),
-    "passport_number": (0.10, 0.18, 0.60, 0.28),
-    "pob": (0.10, 0.38, 0.60, 0.48),
-    "height": (0.60, 0.38, 0.85, 0.48),
-    "eye_color": (0.60, 0.48, 0.85, 0.58),
-    "license_number": (0.10, 0.18, 0.60, 0.28),
-    "issuing_authority": (0.10, 0.68, 0.70, 0.78),
-    "authority": (0.10, 0.68, 0.70, 0.78),
-    "categories": (0.10, 0.50, 0.90, 0.65),
-    "issue_date": (0.60, 0.10, 0.95, 0.20),
+    # DNI / NIE / Residence card format (credit-card size, landscape)
+    "dni_number": (0.42, 0.18, 0.78, 0.28),
+    "nie_number": (0.42, 0.18, 0.78, 0.28),
+    "card_number": (0.42, 0.18, 0.78, 0.28),
+    "full_name": (0.05, 0.22, 0.55, 0.32),
+    "photo": (0.02, 0.02, 0.28, 0.55),
+    "expiration_date": (0.55, 0.63, 0.78, 0.71),
+    "issue_date": (0.38, 0.63, 0.53, 0.71),
+    "dob": (0.75, 0.52, 0.98, 0.62),
+    "gender": (0.38, 0.52, 0.44, 0.61),
+    "nationality": (0.50, 0.52, 0.60, 0.61),
+    "address": (0.05, 0.72, 0.75, 0.88),
+    "previous_address": (0.05, 0.82, 0.75, 0.95),
+    "father_name": (0.05, 0.40, 0.50, 0.50),
+    "mother_name": (0.50, 0.40, 0.90, 0.50),
+    "signature": (0.55, 0.85, 0.95, 0.98),
+    "support_number": (0.38, 0.72, 0.56, 0.80),
+
+    # Passport format
+    "passport_number": (0.05, 0.15, 0.55, 0.28),
+    "pob": (0.05, 0.55, 0.55, 0.65),
+    "height": (0.55, 0.55, 0.85, 0.65),
+    "eye_color": (0.55, 0.65, 0.85, 0.72),
+
+    # Driving license
+    "license_number": (0.42, 0.15, 0.78, 0.28),
+    "issuing_authority": (0.05, 0.75, 0.55, 0.85),
+    "authority": (0.05, 0.75, 0.55, 0.85),
+    "categories": (0.05, 0.50, 0.55, 0.60),
+
+    # Health card
+    "health_number": (0.40, 0.22, 0.85, 0.35),
 }
 
 
