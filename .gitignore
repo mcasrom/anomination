@@ -4,3 +4,5 @@ uploads/*
 !uploads/.gitkeep
 venv/
 .envjson
+*_redacted.png
+*.pytest_cache/
