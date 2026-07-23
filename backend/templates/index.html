@@ -2,240 +2,185 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Anonymation · Minimización RGPD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anonymation</title>
 <meta name="theme-color" content="#0f0f13">
 <style>
-  :root {
-    --bg: #0f0f13; --surface: #1a1a24; --surface2: #24243a;
-    --accent: #6c5ce7; --accent2: #a29bfe; --danger: #e74c3c;
-    --success: #2ed573; --text: #eaeaea; --text2: #9a9ab0;
-    --radius: 12px;
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg); color: var(--text); min-height: 100vh;
+    background: #0f0f13; color: #eaeaea; min-height: 100vh;
   }
-  .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
-  header { text-align: center; margin-bottom: 2rem; }
-  header h1 {
-    font-size: 2rem; font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  header p { color: var(--text2); margin-top: 0.3rem; font-size: 0.9rem; }
+  .container { max-width: 700px; margin: 0 auto; padding: 2rem 1rem; }
+  h1 { text-align: center; font-size: 1.8rem; margin-bottom: 0.3rem; }
+  .sub { text-align: center; color: #9a9ab0; font-size: 0.9rem; margin-bottom: 2rem; }
   .card {
-    background: var(--surface); border-radius: var(--radius);
-    padding: 2rem; border: 1px solid rgba(255,255,255,0.06);
+    background: #1a1a24; border-radius: 12px; padding: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.06);
   }
   .dropzone {
-    border: 2px dashed var(--text2); border-radius: var(--radius);
+    border: 2px dashed #9a9ab0; border-radius: 12px;
     padding: 3rem 2rem; text-align: center; cursor: pointer;
     transition: all 0.3s;
   }
-  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
-  .dropzone.has-image { border-style: solid; border-color: var(--accent); cursor: default; padding: 1rem; }
+  .dropzone:hover { border-color: #6c5ce7; background: rgba(108,92,231,0.08); }
   .dropzone input { display: none; }
   .dropzone .icon { font-size: 3rem; margin-bottom: 0.5rem; }
-  .dropzone p { color: var(--text2); font-size: 0.95rem; }
-  .dropzone .small { font-size: 0.8rem; margin-top: 0.3rem; }
-  .loading { text-align: center; padding: 3rem 0; display: none; }
-  .loading .spinner {
-    width: 40px; height: 40px; border: 3px solid var(--surface2);
-    border-top-color: var(--accent); border-radius: 50%;
+  .dropzone p { color: #9a9ab0; }
+  .dropzone .formats { font-size: 0.8rem; margin-top: 0.4rem; color: #6c5ce7; }
+  .loading { text-align: center; padding: 2rem; display: none; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid #24243a;
+    border-top-color: #6c5ce7; border-radius: 50%;
     animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading p { color: var(--text2); }
-  .loading .detail { color: var(--text2); font-size: 0.8rem; margin-top: 0.3rem; }
   .result { display: none; }
-  .result-image { max-width: 100%; max-height: 500px; border-radius: 8px; margin: 1.5rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-  .result-info {
-    display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0;
+  .result-img {
+    max-width: 100%; max-height: 500px; border-radius: 8px;
+    margin: 1rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
-  .result-info span {
-    display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px;
-    font-size: 0.8rem; font-weight: 500;
+  .info {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+    margin: 0.75rem 0;
   }
-  .tag-doc { background: rgba(108,92,231,0.2); color: var(--accent2); }
-  .tag-redacted { background: rgba(231,76,60,0.2); color: var(--danger); }
-  .tag-preserved { background: rgba(46,213,115,0.2); color: var(--success); }
-  .download-btn {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.9rem 2rem; border-radius: 50px;
-    background: var(--success); color: #000; text-decoration: none;
-    font-weight: 600; font-size: 1rem; margin: 0.5rem 0;
+  .tag {
+    padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
   }
-  .new-btn {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.9rem 2rem; border-radius: 50px;
-    background: var(--surface2); color: var(--text); text-decoration: none;
-    font-weight: 500; font-size: 1rem; margin: 0.5rem 0; cursor: pointer; border: none;
+  .tag-doc { background: rgba(108,92,231,0.2); color: #a29bfe; }
+  .tag-redacted { background: rgba(231,76,60,0.2); color: #e74c3c; }
+  .tag-ok { background: rgba(46,213,115,0.2); color: #2ed573; }
+  .btn {
+    display: inline-block; padding: 0.8rem 2rem; border-radius: 50px;
+    font-size: 1rem; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
   }
-  .error-box {
-    background: rgba(231,76,60,0.15); border-left: 3px solid var(--danger);
-    padding: 1rem; border-radius: 8px; color: #ff6b6b; margin: 1rem 0;
+  .btn-download { background: #2ed573; color: #000; margin: 0.5rem; }
+  .btn-new { background: #24243a; color: #eaeaea; margin: 0.5rem; }
+  .error {
+    background: rgba(231,76,60,0.15); border-left: 3px solid #e74c3c;
+    padding: 1rem; border-radius: 8px; color: #ff6b6b; margin: 1rem 0; display: none;
   }
-  footer { text-align: center; color: var(--text2); font-size: 0.8rem; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.06); }
-  @media (max-width: 480px) {
-    .container { padding: 0.75rem; }
-    header h1 { font-size: 1.5rem; }
-    .card { padding: 1rem; }
-    .dropzone { padding: 2rem 1rem; }
-    .result-image { max-height: 300px; }
-  }
+  .detected-fields { margin: 1rem 0; font-size: 0.85rem; color: #9a9ab0; }
+  .detected-fields span { display: inline-block; padding: 0.15rem 0.5rem; margin: 0.15rem; border-radius: 4px; font-size: 0.8rem; }
+  .field-redacted { background: rgba(231,76,60,0.2); color: #ff6b6b; }
+  .field-kept { background: rgba(46,213,115,0.2); color: #2ed573; }
+  footer { text-align: center; color: #9a9ab0; font-size: 0.8rem; padding: 2rem 0; margin-top: 2rem; }
 </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>◈ Anonymation</h1>
-    <p>Sube un documento y obténlo automáticamente minimizado según RGPD</p>
-  </header>
+  <h1>◈ Anonymation</h1>
+  <p class="sub">Oculta automáticamente los datos personales de tus documentos</p>
 
   <div class="card">
     <div class="dropzone" id="dropzone">
       <input type="file" id="fileInput" accept="image/*,.pdf" />
-      <div class="icon" id="dropIcon">🪪</div>
-      <p id="dropText">Arrastra un documento aquí o haz clic para seleccionar</p>
-      <p class="small">DNI, NIE, Pasaporte, Carné de Conducir, Tarjeta Sanitaria, Empadronamiento — PNG, JPG, PDF</p>
+      <div class="icon">🪪</div>
+      <p>Arrastra un documento o haz clic para seleccionar</p>
+      <p class="formats">DNI · NIE · Pasaporte · Carnet · Sanitaria · Empadronamiento · PDF</p>
     </div>
 
-    <div class="loading" id="loadingSection">
+    <div class="loading" id="loading">
       <div class="spinner"></div>
-      <p id="loadingText">Analizando documento...</p>
-      <p class="detail" id="loadingDetail"></p>
+      <p id="loadText">Analizando con IA...</p>
     </div>
 
-    <div class="result" id="resultSection">
-      <div id="resultInfo"></div>
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <div class="info" id="info"></div>
       <div style="text-align:center">
-        <img id="resultImage" class="result-image" alt="Documento minimizado" />
+        <img id="resultImg" class="result-img" alt="" />
+        <div class="detected-fields" id="fieldsList"></div>
         <div>
-          <a id="downloadLink" class="download-btn">⬇ Descargar documento minimizado</a>
-          <button class="new-btn" id="newBtn">← Nuevo documento</button>
+          <a id="downloadBtn" class="btn btn-download">⬇ Descargar</a>
+          <button class="btn btn-new" id="newBtn">← Nuevo</button>
         </div>
       </div>
     </div>
-
-    <div id="errorSection" style="display:none"></div>
   </div>
 
-  <footer>
-    Anonymation — Minimización de datos según RGPD Art. 5. Los archivos se eliminan tras el procesamiento.
-  </footer>
+  <footer>Los archivos se eliminan tras el procesamiento.</footer>
 </div>
 
 <script>
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const dropIcon = document.getElementById('dropIcon');
-const dropText = document.getElementById('dropText');
-const loadingSection = document.getElementById('loadingSection');
-const loadingText = document.getElementById('loadingText');
-const loadingDetail = document.getElementById('loadingDetail');
-const resultSection = document.getElementById('resultSection');
-const resultInfo = document.getElementById('resultInfo');
-const resultImage = document.getElementById('resultImage');
-const downloadLink = document.getElementById('downloadLink');
-const newBtn = document.getElementById('newBtn');
-const errorSection = document.getElementById('errorSection');
+const MAX_DIM = 1600;
 
-const MAX_IMAGE_DIM = 1600;
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
+const ld = document.getElementById('loading');
+const lt = document.getElementById('loadText');
+const er = document.getElementById('error');
+const rs = document.getElementById('result');
+const ri = document.getElementById('resultImg');
+const ii = document.getElementById('info');
+const fl = document.getElementById('fieldsList');
+const db = document.getElementById('downloadBtn');
+const nb = document.getElementById('newBtn');
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault(); dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) handleFile(fileInput.files[0]);
-});
-newBtn.addEventListener('click', () => {
-  resultSection.style.display = 'none';
-  errorSection.style.display = 'none';
-  dropzone.style.display = 'block';
-  dropIcon.textContent = '🪪';
-  dropText.textContent = 'Arrastra un documento aquí o haz clic para seleccionar';
-  dropzone.classList.remove('has-image');
-  fileInput.value = '';
-});
+dz.onclick = () => fi.click();
+dz.ondragover = e => { e.preventDefault(); dz.style.borderColor = '#6c5ce7'; };
+dz.ondragleave = () => dz.style.borderColor = '#9a9ab0';
+dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = '#9a9ab0'; if (e.dataTransfer.files[0]) go(e.dataTransfer.files[0]); };
+fi.onchange = () => { if (fi.files[0]) go(fi.files[0]); };
+nb.onclick = () => { rs.style.display = 'none'; er.style.display = 'none'; dz.style.display = 'block'; fi.value = ''; };
 
-function resizeImage(file, maxDim) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
-        else { width = Math.round(width * maxDim / height); height = maxDim; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(blob => {
-        resolve({ file: new File([blob], file.name, { type: file.type }), dataUrl: canvas.toDataURL(file.type) });
-      }, file.type, 0.92);
+function resize(f, max) {
+  return new Promise((ok, no) => {
+    const i = new Image();
+    i.onload = () => {
+      let {width: w, height: h} = i;
+      if (w > max || h > max) { if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; } }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(i, 0, 0, w, h);
+      c.toBlob(b => ok(new File([b], f.name, {type: f.type})), f.type, 0.92);
     };
-    img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
-    const reader = new FileReader();
-    reader.onload = e => img.src = e.target.result;
-    reader.readAsDataURL(file);
+    i.onerror = () => no('No se pudo cargar');
+    const r = new FileReader();
+    r.onload = e => i.src = e.target.result;
+    r.readAsDataURL(f);
   });
 }
 
-function handleFile(file) {
-  dropzone.style.display = 'none';
-  errorSection.style.display = 'none';
-  resultSection.style.display = 'none';
-  loadingSection.style.display = 'block';
-  loadingText.textContent = 'Analizando documento...';
-  loadingDetail.textContent = '';
+function go(f) {
+  dz.style.display = 'none';
+  er.style.display = 'none';
+  rs.style.display = 'none';
+  ld.style.display = 'block';
+  lt.textContent = 'Analizando con IA...';
 
-  if (file.type.startsWith('image/')) {
-    resizeImage(file, MAX_IMAGE_DIM).then(({ file: resizedFile }) => {
-      const formData = new FormData();
-      formData.append('file', resizedFile);
-      return fetch('/api/auto-redact', { method: 'POST', body: formData });
-    }).then(r => r.json()).then(showResult).catch(showError);
-  } else {
-    const formData = new FormData();
-    formData.append('file', file);
-    fetch('/api/auto-redact', { method: 'POST', body: formData })
-      .then(r => r.json()).then(showResult).catch(showError);
-  }
-}
+  const step = f.type.startsWith('image/') ? resize(f, MAX_DIM).then(r => r) : Promise.resolve(f);
+  step.then(file => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch('/api/auto-redact', { method: 'POST', body: fd });
+  }).then(r => r.json()).then(d => {
+    ld.style.display = 'none';
+    if (!d.success) { er.textContent = d.error || 'Error'; er.style.display = 'block'; return; }
 
-function showResult(data) {
-  loadingSection.style.display = 'none';
-  if (!data.success) {
-    errorSection.style.display = 'block';
-    errorSection.innerHTML = `<div class="error-box">${data.error || 'Error desconocido'}</div>`;
-    return;
-  }
+    ii.innerHTML = `
+      <span class="tag tag-doc">${d.document_name || 'Documento'}</span>
+      <span class="tag tag-redacted">Redactados: ${(d.redacted_fields || []).length}</span>
+    `;
 
-  resultInfo.innerHTML = `
-    <div class="result-info">
-      <span class="tag-doc">${data.document_name}</span>
-      <span class="tag-redacted">Redactados: ${data.redacted_fields.length}</span>
-      <span class="tag-preserved">Conservados: ${data.preserved_fields.length}</span>
-    </div>
-  `;
+    if (d.detected_fields) {
+      fl.innerHTML = 'Campos detectados: ' + d.detected_fields.map(f =>
+        `<span class="${f.sensitive ? 'field-redacted' : 'field-kept'}">${f.label || f.key}${f.sensitive ? ' ✕' : ' ✓'}</span>`
+      ).join(' ');
+    } else {
+      fl.innerHTML = '';
+    }
 
-  resultImage.src = data.result_url;
-  downloadLink.href = data.result_url;
-  downloadLink.download = data.download_name || 'documento_minimizado.png';
-  resultSection.style.display = 'block';
-}
-
-function showError(err) {
-  loadingSection.style.display = 'none';
-  errorSection.style.display = 'block';
-  errorSection.innerHTML = `<div class="error-box">Error: ${err.message || 'Error de conexión'}</div>`;
+    ri.src = d.result_url;
+    db.href = d.result_url;
+    db.download = d.download_name || 'anonimizado.png';
+    rs.style.display = 'block';
+  }).catch(e => {
+    ld.style.display = 'none';
+    er.textContent = 'Error de conexión: ' + (e.message || e);
+    er.style.display = 'block';
+  });
 }
 </script>
 </body>
