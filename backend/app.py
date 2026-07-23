@@ -153,7 +153,10 @@ def analyze():
                 merged = {"x1": min(xs), "y1": min(ys), "x2": max(xs), "y2": max(ys)}
                 mapped_fields.append({"sys_key": sys_key, "ai_key": "+".join(p["ai_key"] for p in parts), "box": merged})
 
-        is_absolute = bool(mapped_fields) and max(mapped_fields[0]["box"].get(k, 0) for k in ("x1", "x2", "y1", "y2")) > 1.5
+        def norm_coord(val, dim):
+            if val > 1.5:
+                return val / dim if dim else 0.0
+            return val
 
         exact_key_hits = {e["ai_key"] for e in mapped_fields if e["ai_key"] == e["sys_key"]}
 
@@ -164,13 +167,15 @@ def analyze():
                 if entry["ai_key"] != sys_key and sys_key in exact_key_hits:
                     continue
             b = entry["box"]
-            if is_absolute:
-                bx1, by1, bx2, by2 = b["x1"], b["y1"], b["x2"], b["y2"]
-            else:
-                bx1 = int(b["x1"] * img_w)
-                by1 = int(b["y1"] * img_h)
-                bx2 = int(b["x2"] * img_w)
-                by2 = int(b["y2"] * img_h)
+            rx1 = norm_coord(b["x1"], img_w)
+            ry1 = norm_coord(b["y1"], img_h)
+            rx2 = norm_coord(b["x2"], img_w)
+            ry2 = norm_coord(b["y2"], img_h)
+            bx1 = int(rx1 * img_w)
+            by1 = int(ry1 * img_h)
+            bx2 = int(rx2 * img_w)
+            by2 = int(ry2 * img_h)
+            entry["box"] = {"x1": rx1, "y1": ry1, "x2": rx2, "y2": ry2}
             preview_boxes_ai[sys_key] = {
                 "x1": bx1, "y1": by1, "x2": bx2, "y2": by2, "w": img_w, "h": img_h,
             }
@@ -178,6 +183,7 @@ def analyze():
             if key in excessive_keys:
                 preview_boxes[key] = box
 
+        is_absolute = False
         with open(analyze_path + "_ai_fields.json", 'w') as f:
             used_keys = set()
             deduped = []
