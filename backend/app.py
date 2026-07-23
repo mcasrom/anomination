@@ -467,10 +467,19 @@ def auto_redact():
         ry2 = norm_coord(b["y2"], h)
         detected_fields.append({"key": sys_key, "label": f.get("label", ""), "sensitive": is_sensitive})
         if is_sensitive:
-            sensitive_boxes.append((
-                int(rx1 * w), int(ry1 * h),
-                int(rx2 * w), int(ry2 * h),
-            ))
+            bw = (rx2 - rx1) * w
+            bh = (ry2 - ry1) * h
+            pad_x = max(int(bw * 0.25), 20)
+            pad_y = max(int(bh * 0.5), 10)
+            cx = int((rx1 + rx2) * 0.5 * w)
+            cy = int((ry1 + ry2) * 0.5 * h)
+            half_w = max(int(bw * 0.5) + pad_x, 40)
+            half_h = max(int(bh * 0.5) + pad_y, 20)
+            bx1 = max(0, cx - half_w)
+            by1 = max(0, cy - half_h)
+            bx2 = min(w, cx + half_w)
+            by2 = min(h, cy + half_h)
+            sensitive_boxes.append((bx1, by1, bx2, by2))
 
     if not sensitive_boxes:
         result_path = filepath + "_redacted.png"
@@ -484,6 +493,26 @@ def auto_redact():
             "download_name": f"anonimizado.png",
             "warning": "La IA no marcó ningún campo como sensible en esta imagen.",
         })
+
+    # Merge overlapping boxes
+    merged = []
+    for bx1, by1, bx2, by2 in sorted(sensitive_boxes):
+        merged_into = None
+        for i, (mx1, my1, mx2, my2) in enumerate(merged):
+            overlap_x = max(0, min(bx2, mx2) - max(bx1, mx1))
+            overlap_y = max(0, min(by2, my2) - max(by1, my1))
+            if overlap_x > 0 and overlap_y > 0:
+                merged[i] = (min(mx1, bx1), min(my1, by1), max(mx2, bx2), max(my2, by2))
+                merged_into = i
+                break
+            gap_y = max(0, max(by1, my1) - min(by2, my2))
+            if overlap_x > max(0, mx2 - mx1) * 0.3 and gap_y < 10:
+                merged[i] = (min(mx1, bx1), min(my1, by1), max(mx2, bx2), max(my2, by2))
+                merged_into = i
+                break
+        if merged_into is None:
+            merged.append((bx1, by1, bx2, by2))
+    sensitive_boxes = merged
 
     result_img = apply_minimization(analyze_path, None, [], mode='redact', override_boxes=sensitive_boxes)
     result_path = filepath + "_redacted.png"
