@@ -488,12 +488,12 @@
 
         <div class="controls">
           <div class="mode-selector">
-            <input type="radio" name="mode" id="modeWatermark" value="watermark" checked>
-            <label for="modeWatermark">🌊 Marca de agua</label>
+            <input type="radio" name="mode" id="modeRedact" value="redact" checked>
+            <label for="modeRedact">⬛ Tachar</label>
             <input type="radio" name="mode" id="modeBlur" value="blur">
             <label for="modeBlur">🌀 Difuminar</label>
-            <input type="radio" name="mode" id="modeRedact" value="redact">
-            <label for="modeRedact">⬛ Tachar</label>
+            <input type="radio" name="mode" id="modeWatermark" value="watermark">
+            <label for="modeWatermark">🌊 Marca de agua</label>
           </div>
           <button class="primary" id="processBtn" disabled>Procesar y ver resultado</button>
         </div>
@@ -830,9 +830,9 @@ function updatePreview(data) {
           const x = Math.round(box.x1); const y = Math.round(box.y1);
           const bw = Math.round(box.x2 - box.x1); const bh = Math.round(box.y2 - box.y1);
           if (isRedact) {
-            ctx.fillStyle = 'rgba(200, 40, 40, 0.45)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
             ctx.fillRect(x, y, bw, bh);
-            ctx.strokeStyle = 'rgba(200, 40, 40, 0.9)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.lineWidth = 2; ctx.setLineDash([]);
             ctx.strokeRect(x, y, bw, bh);
             ctx.fillStyle = 'rgba(200, 40, 40, 0.85)';

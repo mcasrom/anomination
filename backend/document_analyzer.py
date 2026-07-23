@@ -9,22 +9,23 @@ from rgpd_rules import DOCUMENT_TYPES, DocumentType
 
 FIELD_BOXES = {
     # DNI / NIE / Residence card format (credit-card size, landscape)
-    "dni_number": (0.42, 0.18, 0.78, 0.28),
-    "nie_number": (0.42, 0.18, 0.78, 0.28),
-    "card_number": (0.42, 0.18, 0.78, 0.28),
-    "full_name": (0.05, 0.22, 0.55, 0.32),
+    # Layout: photo left ~28%, text fields to the right
+    "dni_number": (0.32, 0.15, 0.75, 0.25),
+    "nie_number": (0.32, 0.15, 0.75, 0.25),
+    "card_number": (0.32, 0.15, 0.75, 0.25),
+    "full_name": (0.32, 0.27, 0.78, 0.38),
     "photo": (0.02, 0.02, 0.28, 0.55),
-    "expiration_date": (0.55, 0.63, 0.78, 0.71),
-    "issue_date": (0.38, 0.63, 0.53, 0.71),
-    "dob": (0.75, 0.52, 0.98, 0.62),
-    "gender": (0.38, 0.52, 0.44, 0.61),
-    "nationality": (0.50, 0.52, 0.60, 0.61),
+    "expiration_date": (0.55, 0.62, 0.78, 0.70),
+    "issue_date": (0.32, 0.62, 0.53, 0.70),
+    "dob": (0.32, 0.40, 0.55, 0.48),
+    "gender": (0.57, 0.40, 0.65, 0.48),
+    "nationality": (0.67, 0.40, 0.78, 0.48),
     "address": (0.05, 0.72, 0.75, 0.88),
     "previous_address": (0.05, 0.82, 0.75, 0.95),
-    "father_name": (0.05, 0.40, 0.50, 0.50),
-    "mother_name": (0.50, 0.40, 0.90, 0.50),
-    "signature": (0.55, 0.85, 0.95, 0.98),
-    "support_number": (0.38, 0.72, 0.56, 0.80),
+    "father_name": (0.32, 0.50, 0.55, 0.58),
+    "mother_name": (0.57, 0.50, 0.78, 0.58),
+    "signature": (0.55, 0.88, 0.95, 0.98),
+    "support_number": (0.32, 0.05, 0.75, 0.13),
 
     # Passport format
     "passport_number": (0.05, 0.15, 0.55, 0.28),

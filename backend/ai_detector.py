@@ -8,12 +8,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
 GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-flash-lite-latest"
+GEMINI_MODEL = "gemini-3.1-flash-lite"
 
 DETECT_VISION_PROMPT = (
     "Analiza esta imagen de un documento de identidad (DNI, NIE, pasaporte, carnet de conducir, "
     "tarjeta sanitaria, residencia, empadronamiento) o factura/documento oficial. "
     "Identifica el tipo de documento y las coordenadas de cada campo visible. "
+    "IMPORTANTE: las coordenadas deben ser RELATIVAS (0.0 a 1.0) respecto al ancho y alto de la imagen. "
+    "Cada caja debe rodear EXACTAMENTE el texto de ese campo, SIN incluir texto de campos vecinos.\n"
     "Devuelve SOLO JSON válido con esta estructura EXACTA:\n"
     "{\n"
     '  "document_type": "dni|nie|passport|driving_license|residence_card|health_card|padron|invoice|contract|other",\n'
@@ -23,11 +25,12 @@ DETECT_VISION_PROMPT = (
     '    {"key": "full_name", "label": "Nombre completo", "value": "texto visible", "sensitive": false, '
     '"box": {"x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": 0.0}}\n'
     "  ],\n"
-    '  "sensitive_fields": ["lista de keys marcadas como sensitive"],\n'
     '  "summary": "breve descripción"\n'
     "}\n"
-    "IMPORTANTE: cada field DEBE incluir 'box' con coordenadas RELATIVAS (0-1) que correspondan "
-    "a la posición real del campo en la imagen (x1,y1 esquina sup-izq, x2,y2 esquina inf-der).\n"
+    "Posibles keys: full_name, dni_number, nie_number, card_number, passport_number, license_number, "
+    "health_number, support_number, address, dob, gender, nationality, expiration_date, issue_date, "
+    "signature, father_name, mother_name, pob, height, eye_color, issuing_authority, categories, "
+    "previous_address, photo, document_type.\n"
     "Marca como sensitive=True los campos que contengan datos personales excesivos según RGPD:\n"
     "- DNI/NIE/pasaporte: número de documento, dirección, fecha nacimiento, firma, sexo, nacionalidad, "
     "nombre de padres, lugar de nacimiento\n"
@@ -134,12 +137,18 @@ def _gemini_available():
 def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel(GEMINI_MODEL)
+    model = genai.GenerativeModel(
+        GEMINI_MODEL,
+        generation_config={"response_mime_type": "application/json"}
+    )
     response = model.generate_content([
+        {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(image_bytes).decode()}},
         prompt,
-        {"mime_type": mime_type, "data": base64.b64encode(image_bytes).decode()}
     ])
-    return _parse_json_response(response.text)
+    if not response.candidates:
+        raise ValueError(f"No candidates returned. Prompt feedback: {response.prompt_feedback}")
+    text = response.candidates[0].content.parts[0].text
+    return _parse_json_response(text)
 
 
 # -- Public API --
