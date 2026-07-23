@@ -467,14 +467,14 @@ def auto_redact():
         ry2 = norm_coord(b["y2"], h)
         detected_fields.append({"key": sys_key, "label": f.get("label", ""), "sensitive": is_sensitive})
         if is_sensitive:
-            bw = (rx2 - rx1) * w
-            bh = (ry2 - ry1) * h
-            pad_x = max(int(bw * 0.25), 20)
-            pad_y = max(int(bh * 0.5), 10)
+            bw_rel = rx2 - rx1
+            bh_rel = ry2 - ry1
+            bw = bw_rel * w
+            bh = bh_rel * h
             cx = int((rx1 + rx2) * 0.5 * w)
             cy = int((ry1 + ry2) * 0.5 * h)
-            half_w = max(int(bw * 0.5) + pad_x, 40)
-            half_h = max(int(bh * 0.5) + pad_y, 20)
+            half_w = max(int(bw * 0.8), int(w * 0.08))
+            half_h = max(int(bh * 1.0), int(h * 0.025))
             bx1 = max(0, cx - half_w)
             by1 = max(0, cy - half_h)
             bx2 = min(w, cx + half_w)

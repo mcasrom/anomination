@@ -1,7 +1,7 @@
 {
-  "name": "Anonymation — Minimización RGPD",
+  "name": "Anonymation — Protege tus datos",
   "short_name": "Anonymation",
-  "description": "Anonimiza DNIs, facturas, contratos y documentos oficiales. Cumple con el principio de minimización de datos del RGPD Art. 5.",
+  "description": "Oculta datos personales de documentos con IA. Privacidad para tu DNI, pasaporte y mas.",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
@@ -23,15 +23,6 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/static/screenshot.svg",
-      "sizes": "1280x720",
-      "type": "image/svg+xml",
-      "form_factor": "wide",
-      "label": "Vista principal de Anonymation"
     }
   ],
   "related_applications": [],

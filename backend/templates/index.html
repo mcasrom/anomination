@@ -2,9 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Anonymation · Protege tus datos</title>
 <meta name="theme-color" content="#0f0f13">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anonymation">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -21,7 +26,6 @@
   }
   .hero p { color: #9a9ab0; margin-top: 0.5rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5; }
 
-  /* Privacy Banner */
   .privacy-banner {
     background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.15);
     border-radius: 12px; padding: 1.25rem; margin: 1rem 0 1.5rem;
@@ -29,7 +33,6 @@
   }
   .privacy-banner h3 { color: #a29bfe; font-size: 0.95rem; margin-bottom: 0.5rem; }
   .privacy-banner p { color: #9a9ab0; font-size: 0.82rem; line-height: 1.5; max-width: 650px; margin: 0 auto; }
-
   .seal { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 0.75rem 0; }
   .seal span {
     display: inline-flex; align-items: center; gap: 0.3rem;
@@ -43,6 +46,16 @@
     border: 1px solid rgba(255,255,255,0.06);
   }
 
+  .input-methods { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .input-methods button {
+    flex: 1; padding: 0.7rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: #9a9ab0; cursor: pointer; font-size: 0.85rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .input-methods button.active, .input-methods button:hover {
+    border-color: #6c5ce7; color: #eaeaea; background: rgba(108,92,231,0.1);
+  }
+
   .dropzone {
     border: 2px dashed #9a9ab0; border-radius: 12px;
     padding: 3rem 2rem; text-align: center; cursor: pointer;
@@ -53,6 +66,22 @@
   .dropzone .icon { font-size: 3rem; margin-bottom: 0.5rem; }
   .dropzone p { color: #9a9ab0; font-size: 0.95rem; }
   .dropzone .formats { font-size: 0.8rem; margin-top: 0.4rem; color: #6c5ce7; }
+
+  .camera-wrap { display: none; position: relative; border-radius: 12px; overflow: hidden; background: #000; }
+  .camera-wrap video {
+    width: 100%; display: block; max-height: 60vh; object-fit: contain;
+  }
+  .camera-wrap .controls {
+    position: absolute; bottom: 1rem; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 1rem;
+  }
+  .camera-wrap .controls button {
+    padding: 0.8rem 2rem; border-radius: 50px; border: none;
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  .btn-capture { background: #2ed573; color: #000; }
+  .btn-switch { background: rgba(255,255,255,0.2); color: #fff; }
+  .btn-close-cam { background: rgba(231,76,60,0.8); color: #fff; padding: 0.8rem 1rem; }
 
   .loading { text-align: center; padding: 2rem; display: none; }
   .spinner {
@@ -70,24 +99,17 @@
     margin: 1rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
   .info {
-    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
-    margin: 0.75rem 0;
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 0.75rem 0;
   }
   .tag {
     padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
   }
   .tag-doc { background: rgba(108,92,231,0.2); color: #a29bfe; }
   .tag-redacted { background: rgba(231,76,60,0.2); color: #ff6b6b; }
-  .tag-ok { background: rgba(46,213,115,0.2); color: #2ed573; }
-
   .fields-list { margin: 1rem 0; font-size: 0.85rem; color: #9a9ab0; text-align: center; }
-  .fields-list .f {
-    display: inline-block; padding: 0.2rem 0.6rem; margin: 0.15rem;
-    border-radius: 4px; font-size: 0.8rem;
-  }
+  .fields-list .f { display: inline-block; padding: 0.2rem 0.6rem; margin: 0.15rem; border-radius: 4px; font-size: 0.8rem; }
   .f-redacted { background: rgba(231,76,60,0.2); color: #ff6b6b; text-decoration: line-through; }
   .f-kept { background: rgba(46,213,115,0.2); color: #2ed573; }
-
   .actions { text-align: center; margin-top: 1rem; }
   .btn {
     display: inline-block; padding: 0.8rem 2rem; border-radius: 50px;
@@ -95,16 +117,13 @@
   }
   .btn-download { background: #2ed573; color: #000; }
   .btn-new { background: #24243a; color: #eaeaea; }
-
   .error-box {
     background: rgba(231,76,60,0.15); border-left: 3px solid #e74c3c;
     padding: 1rem; border-radius: 8px; color: #ff6b6b; margin: 1rem 0; display: none;
     font-size: 0.9rem;
   }
 
-  .rights {
-    margin-top: 2rem;
-  }
+  .rights { margin-top: 2rem; }
   .rights details {
     background: rgba(108,92,231,0.04); border: 1px solid rgba(108,92,231,0.1);
     border-radius: 10px; margin-bottom: 0.5rem; overflow: hidden;
@@ -112,36 +131,23 @@
   .rights details summary {
     padding: 1rem 1.25rem; cursor: pointer; color: #a29bfe;
     font-weight: 600; font-size: 0.9rem;
-    display: flex; align-items: center; gap: 0.5rem;
-    list-style: none;
+    display: flex; align-items: center; gap: 0.5rem; list-style: none;
   }
   .rights details summary::-webkit-details-marker { display: none; }
-  .rights details summary::before { content: "▶"; font-size: 0.7rem; color: #6c5ce7; transition: transform 0.2s; }
-  .rights details[open] summary::before { content: "▼"; }
+  .rights details summary::before { content: ">"; font-size: 0.7rem; color: #6c5ce7; margin-right: 0.3rem; }
+  .rights details[open] summary::before { content: "v"; }
   .rights details .body {
     padding: 0 1.25rem 1.25rem; color: #9a9ab0; font-size: 0.85rem; line-height: 1.6;
   }
   .rights details .body strong { color: #eaeaea; }
   .rights details .body a { color: #a29bfe; text-decoration: none; }
-  .rights details .body a:hover { text-decoration: underline; }
-
-  .how {
-    margin-top: 2rem; padding: 1.5rem; border-radius: 12px;
-    background: rgba(108,92,231,0.04); border: 1px solid rgba(108,92,231,0.1);
-  }
-  .how h3 { color: #a29bfe; font-size: 0.95rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
-  .how ol { color: #9a9ab0; font-size: 0.85rem; padding-left: 1.2rem; line-height: 1.8; }
-  .how li { margin-bottom: 0.2rem; }
-  .how strong { color: #eaeaea; }
 
   footer {
     text-align: center; color: #7a7a90; font-size: 0.78rem;
     padding: 2rem 0; margin-top: 2rem;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    line-height: 1.7;
+    border-top: 1px solid rgba(255,255,255,0.05); line-height: 1.7;
   }
   footer a { color: #a29bfe; text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
 
   @media (max-width: 480px) {
     .container { padding: 1rem 0.75rem; }
@@ -159,31 +165,43 @@
   </div>
 
   <div class="privacy-banner">
-    <h3>🔐 Tus datos, tu control</h3>
-    <p>
-      Subes tu documento, la inteligencia artificial detecta los datos personales,
-      los oculta automáticamente y descargas el resultado. <strong>No almacenamos nada</strong>.
-      Los archivos temporales se eliminan al cerrar la página.
-    </p>
+    <h3> Tus datos, tu control</h3>
+    <p>Subes o capturas tu documento, la IA detecta los datos personales, los oculta automáticamente y descargas el resultado. <strong>No almacenamos nada</strong>.</p>
     <div class="seal">
-      <span>🇪🇺 Procesado en Europa</span>
-      <span>🤖 IA de Google (Gemini)</span>
-      <span>🗑️ Sin almacenamiento</span>
-      <span>📧 anonimizacion@viajeinteligencia.com</span>
+      <span> EU Procesado en Europa</span>
+      <span> IA de Google (Gemini)</span>
+      <span> Sin almacenamiento</span>
+      <span> anonimizacion@viajeinteligencia.com</span>
     </div>
   </div>
 
   <div class="card">
-    <div class="dropzone" id="dropzone">
-      <input type="file" id="fileInput" accept="image/*,.pdf" />
-      <div class="icon">🪪</div>
-      <p>Arrastra tu documento aquí o haz clic</p>
-      <p class="formats">DNI · NIE · Pasaporte · Carnet de Conducir · Tarjeta Sanitaria · Empadronamiento · PDF</p>
+    <div class="input-methods">
+      <button id="btnUpload" class="active"> Subir archivo</button>
+      <button id="btnCamera"> Camara</button>
+    </div>
+
+    <div id="uploadSection">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*,.pdf" />
+        <div class="icon">🪪</div>
+        <p>Arrastra tu documento aqui o haz clic</p>
+        <p class="formats">DNI · NIE · Pasaporte · Carnet · Tarjeta Sanitaria · PDF</p>
+      </div>
+    </div>
+
+    <div id="cameraSection" class="camera-wrap">
+      <video id="video" autoplay playsinline></video>
+      <div class="controls">
+        <button class="btn-capture" id="btnCapture"> Capturar</button>
+        <button class="btn-switch" id="btnSwitchCam"> Cambiar camara</button>
+        <button class="btn-close-cam" id="btnCloseCam">✕</button>
+      </div>
     </div>
 
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <p id="loadText">La IA está analizando tu documento...</p>
+      <p id="loadText">La IA esta analizando tu documento...</p>
       <small id="loadSub">Identificando campos con datos personales</small>
     </div>
 
@@ -204,98 +222,58 @@
 
   <div class="rights">
     <details>
-      <summary>📋 ¿Qué datos se ocultan y por qué?</summary>
+      <summary> Que datos se ocultan y por que?</summary>
       <div class="body">
-        <p>La inteligencia artificial identifica campos con datos personales y los clasifica como <strong>sensibles</strong> o <strong>no sensibles</strong>:</p>
-        <p style="margin-top:0.5rem">
-          <strong>✓ Se ocultan (sensibles):</strong> número de DNI/NIE/pasaporte, dirección completa, fecha de nacimiento,
-          firma, fotografía, datos bancarios, nombres de familiares, importes en facturas.
-        </p>
-        <p style="margin-top:0.3rem">
-          <strong>✓ Se conservan (no sensibles):</strong> nombre, tipo de documento, fecha de validez,
-          nacionalidad, datos de emisión que no identifican a la persona.
-        </p>
-        <p style="margin-top:0.5rem">
-          El criterio se basa en el principio de <strong>minimización de datos</strong> (RGPD Art. 5):
-          solo se conserva la información estrictamente necesaria para la finalidad del documento.
-        </p>
+        <p>La IA identifica campos y los clasifica como sensibles o no segun el principio de <strong>minimizacion de datos</strong> (RGPD Art. 5).</p>
+        <p style="margin-top:0.5rem"><strong>✓ Se ocultan:</strong> numero DNI/NIE/pasaporte, direccion, fecha nacimiento, firma, fotografia, datos bancarios, nombres familiares.</p>
+        <p><strong>✓ Se conservan:</strong> nombre, tipo documento, fecha validez, nacionalidad.</p>
       </div>
     </details>
     <details>
-      <summary>🔍 ¿Cómo se procesa mi documento?</summary>
+      <summary> Como se procesa?</summary>
       <div class="body">
-        <ol style="padding-left:1.2rem; line-height:1.8">
-          <li><strong>Subes el documento</strong> — Foto o PDF de tu DNI, pasaporte, carnet, etc.</li>
-          <li><strong>Se envía a Google Gemini (IA)</strong> — La imagen se analiza por la inteligencia artificial de Google en servidores dentro de la Unión Europea.</li>
-          <li><strong>La IA identifica los campos</strong> — Detecta cada dato visible y decide si es sensible o no.</li>
-          <li><strong>Se ocultan los datos sensibles</strong> — Se tachan en negro sólido (tachado irreversible).</li>
-          <li><strong>Descargas el resultado</strong> — Tu documento listo para compartir sin exponer tus datos.</li>
+        <ol style="padding-left:1.2rem;line-height:1.8">
+          <li>Capturas o subes el documento</li>
+          <li>Se envia a Google Gemini (IA) en servidores UE</li>
+          <li>La IA identifica los campos y decide que es sensible</li>
+          <li>Se tachan en negro los datos sensibles</li>
+          <li>Descargas el resultado</li>
         </ol>
       </div>
     </details>
     <details>
-      <summary>🛡️ ¿Dónde van mis datos? ¿Se guardan?</summary>
+      <summary> Donde van mis datos?</summary>
       <div class="body">
-        <p>
-          <strong>No almacenamos nada de forma permanente.</strong> El documento se procesa en memoria y el archivo
-          temporal se elimina automáticamente. No guardamos copias, no compartimos datos con terceros,
-          no usamos tus documentos para entrenar modelos de IA.
-        </p>
-        <p style="margin-top:0.5rem">
-          El análisis lo realiza <strong>Google Gemini</strong> (modelo de lenguaje con visión artificial)
-          en centros de datos ubicados en la <strong>Unión Europea</strong>, cumpliendo con la normativa
-          europea de protección de datos.
-        </p>
-        <p style="margin-top:0.5rem">
-          <strong>No somos China ni Estados Unidos.</strong> Operamos bajo la legislación europea
-          y respetamos tus derechos de privacidad.
-        </p>
+        <p><strong>No almacenamos nada de forma permanente.</strong> El analisis lo realiza Google Gemini en centros de datos de la <strong>Union Europea</strong>. No compartimos datos con terceros. No usamos tus documentos para entrenar modelos.</p>
+        <p style="margin-top:0.5rem"><strong>No somos China ni Estados Unidos.</strong> Operamos bajo legislacion europea.</p>
       </div>
     </details>
     <details>
-      <summary>⚖️ ¿Cuáles son mis derechos?</summary>
+      <summary> Cuales son mis derechos?</summary>
       <div class="body">
-        <p style="margin-bottom:0.5rem">
-          Como titular de los datos, tienes derecho a:
-        </p>
-        <ul style="padding-left:1.2rem; line-height:1.8">
-          <li><strong>Saber</strong> qué datos tuyos se procesan y con qué finalidad.</li>
-          <li><strong>Acceder</strong> a la información sobre el tratamiento de tus datos.</li>
-          <li><strong>Que se minimicen</strong> tus datos — solo lo necesario para la finalidad.</li>
-          <li><strong>Que se eliminen</strong> tus datos una vez procesados.</li>
-          <li><strong>Contactar</strong> con el responsable para ejercer tus derechos.</li>
-        </ul>
-        <p style="margin-top:0.5rem">
-          Para cualquier consulta o ejercicio de tus derechos, escríbenos a:
-          <strong><a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a></strong>
-        </p>
-      </div>
-    </details>
-    <details>
-      <summary>📄 Responsable del tratamiento</summary>
-      <div class="body">
-        <p>
-          Esta herramienta es operada por <strong>Viaje Inteligencia</strong>.
-          Los datos se procesan exclusivamente para la finalidad de anonimización de documentos.
-          No se ceden datos a terceros. No se realizan transferencias internacionales fuera del Espacio Económico Europeo.
-        </p>
-        <p style="margin-top:0.5rem">
-          Contacto: <a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a>
-        </p>
+        <p>Tienes derecho a saber que datos se procesan, acceder a la informacion, que se minimicen tus datos, que se eliminen tras el proceso, y contactar con el responsable.</p>
+        <p style="margin-top:0.5rem">Contacto: <a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a></p>
       </div>
     </details>
   </div>
 
   <footer>
-    <strong>Anonymation</strong> — Herramienta de minimización de datos personales basada en IA.<br>
-    Los documentos se procesan temporalmente en servidores europeos y se eliminan automáticamente.<br>
-    Al usar este servicio, ejerces tu derecho a la protección de datos (RGPD Art. 5: minimización).<br>
+    <strong>Anonymation</strong> — Minimizacion de datos personales con IA.<br>
+    Procesado temporal en servidores UE. Sin almacenamiento.<br>
     Contacto: <a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a>
   </footer>
 </div>
 
 <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js');
+}
+
 const MAX = 1600;
+let stream = null;
+let facingMode = "environment";
+let currentMethod = "upload";
+
 const dz = document.getElementById('dropzone');
 const fi = document.getElementById('fileInput');
 const ld = document.getElementById('loading');
@@ -308,15 +286,75 @@ const ii = document.getElementById('info');
 const fl = document.getElementById('fieldsList');
 const db = document.getElementById('downloadBtn');
 const nb = document.getElementById('newBtn');
+const btnUpload = document.getElementById('btnUpload');
+const btnCamera = document.getElementById('btnCamera');
+const uploadSection = document.getElementById('uploadSection');
+const cameraSection = document.getElementById('cameraSection');
+const video = document.getElementById('video');
+const btnCapture = document.getElementById('btnCapture');
+const btnSwitchCam = document.getElementById('btnSwitchCam');
+const btnCloseCam = document.getElementById('btnCloseCam');
+
+btnUpload.onclick = () => { switchMethod('upload'); };
+btnCamera.onclick = () => { switchMethod('camera'); };
+nb.onclick = () => { rs.style.display = 'none'; er.style.display = 'none'; switchMethod(currentMethod); };
+
+function switchMethod(method) {
+  currentMethod = method;
+  btnUpload.classList.toggle('active', method === 'upload');
+  btnCamera.classList.toggle('active', method === 'camera');
+  uploadSection.style.display = method === 'upload' ? 'block' : 'none';
+  cameraSection.style.display = method === 'camera' ? 'block' : 'none';
+  if (method === 'camera') startCamera();
+  else stopCamera();
+}
+
+async function startCamera() {
+  try {
+    stopCamera();
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+  } catch (e) {
+    showError('No se pudo acceder a la camara: ' + e.message);
+    switchMethod('upload');
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+}
+
+btnCloseCam.onclick = () => switchMethod('upload');
+btnSwitchCam.onclick = () => {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  startCamera();
+};
+btnCapture.onclick = capturePhoto;
+
+function capturePhoto() {
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth;
+  c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  c.toBlob(blob => {
+    const file = new File([blob], 'camara.jpg', { type: 'image/jpeg' });
+    stopCamera();
+    processFile(file);
+  }, 'image/jpeg', 0.92);
+}
 
 dz.onclick = () => fi.click();
 dz.ondragover = e => { e.preventDefault(); dz.style.borderColor = '#6c5ce7'; };
 dz.ondragleave = () => dz.style.borderColor = '#9a9ab0';
 dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = '#9a9ab0'; if (e.dataTransfer.files[0]) start(e.dataTransfer.files[0]); };
 fi.onchange = () => { if (fi.files[0]) start(fi.files[0]); };
-nb.onclick = () => { rs.style.display = 'none'; er.style.display = 'none'; dz.style.display = 'block'; fi.value = ''; };
 
 function resizeImage(file, max) {
+  if (!file.type.startsWith('image/')) return Promise.resolve(file);
   return new Promise((ok, no) => {
     const img = new Image();
     img.onload = () => {
@@ -335,15 +373,19 @@ function resizeImage(file, max) {
 }
 
 function start(file) {
+  processFile(file);
+}
+
+function processFile(file) {
   dz.style.display = 'none';
+  cameraSection.style.display = 'none';
   er.style.display = 'none';
   rs.style.display = 'none';
   ld.style.display = 'block';
-  lt.textContent = 'La IA está analizando tu documento...';
+  lt.textContent = 'La IA esta analizando tu documento...';
   ls.textContent = 'Identificando campos con datos personales';
 
-  const p = file.type.startsWith('image/') ? resizeImage(file, MAX) : Promise.resolve(file);
-  p.then(f => {
+  resizeImage(file, MAX).then(f => {
     const fd = new FormData();
     fd.append('file', f);
     return fetch('/api/auto-redact', { method: 'POST', body: fd });
@@ -351,7 +393,7 @@ function start(file) {
   .then(r => r.json())
   .then(d => {
     ld.style.display = 'none';
-    if (!d.success) { er.textContent = d.error || 'Error al procesar'; er.style.display = 'block'; return; }
+    if (!d.success) { showError(d.error || 'Error al procesar'); return; }
 
     ii.innerHTML = `
       <span class="tag tag-doc">${d.document_name || 'Documento'}</span>
@@ -373,9 +415,13 @@ function start(file) {
   })
   .catch(e => {
     ld.style.display = 'none';
-    er.textContent = 'Error: ' + (e.message || e);
-    er.style.display = 'block';
+    showError('Error: ' + (e.message || e));
   });
+}
+
+function showError(msg) {
+  er.textContent = msg;
+  er.style.display = 'block';
 }
 </script>
 </body>

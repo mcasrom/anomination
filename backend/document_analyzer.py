@@ -136,8 +136,8 @@ def get_field_preview_boxes(image_path: str, doc_type: DocumentType,
 
 # ---- Anonymization ----
 
-REDACTION_COLOR = (200, 40, 40, 255)
-REDACTION_COLOR_WATERMARK = (200, 40, 40, 200)
+REDACTION_COLOR = (0, 0, 0, 255)
+REDACTION_COLOR_WATERMARK = (0, 0, 0, 200)
 WATERMARK_TEXT = "DATOS EXCESIVOS (RGPD)"
 
 
