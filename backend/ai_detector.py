@@ -140,16 +140,15 @@ def _gemini_available():
 
 def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
     import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel(
         GEMINI_MODEL,
         generation_config={"response_mime_type": "application/json"},
         safety_settings={
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
         }
     )
     response = model.generate_content([
