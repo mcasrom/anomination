@@ -6,7 +6,11 @@ import io
 from flask import Flask, request, jsonify, render_template, send_file, url_for
 from PIL import Image
 
-from document_analyzer import detect_document_type, apply_minimization, get_field_preview_boxes, get_field_boxes_for_type, FIELD_BOXES as FLAT_FIELD_BOXES
+from document_analyzer import (
+    detect_document_type, apply_minimization, get_field_preview_boxes,
+    get_field_boxes_for_type, FIELD_BOXES as FLAT_FIELD_BOXES,
+    detect_fields_by_content, detect_excessive_field_boxes,
+)
 from rgpd_rules import DOCUMENT_TYPES, DocumentField, analyze_necessity, map_ai_key, AI_COMPOSITE_KEYS
 from ai_detector import detect_document_with_ai, suggest_redactions_with_ai, ai_available
 from pdf_processor import (
@@ -480,25 +484,39 @@ def auto_redact():
             evidence = ev
             doc_name = doc_type.name_es
 
-    doc_field_boxes = get_field_boxes_for_type(doc_type.code) if doc_type else {}
-
+    content_boxes = []
+    found_field_keys = []
     if doc_type:
-        excessive = list(doc_type.excessive_fields().keys())
-        for key in excessive:
-            if key in doc_field_boxes:
-                fx1, fy1, fx2, fy2 = doc_field_boxes[key]
-            elif key in FLAT_FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FLAT_FIELD_BOXES[key]
-            else:
-                continue
-            bx1, by1 = int(w * fx1), int(h * fy1)
-            bx2, by2 = int(w * fx2), int(h * fy2)
-            redact_boxes.append((bx1, by1, bx2, by2))
+        content_boxes, found_field_keys = detect_excessive_field_boxes(img, doc_type)
+
+    if content_boxes:
+        redact_boxes = content_boxes
+        for key in found_field_keys:
             detected_fields.append({
                 "key": key,
                 "label": doc_type.fields.get(key, DocumentField(key, key, key, False, "medium")).label_es,
                 "sensitive": True
             })
+    else:
+        doc_field_boxes = get_field_boxes_for_type(doc_type.code) if doc_type else {}
+
+        if doc_type:
+            excessive = list(doc_type.excessive_fields().keys())
+            for key in excessive:
+                if key in doc_field_boxes:
+                    fx1, fy1, fx2, fy2 = doc_field_boxes[key]
+                elif key in FLAT_FIELD_BOXES:
+                    fx1, fy1, fx2, fy2 = FLAT_FIELD_BOXES[key]
+                else:
+                    continue
+                bx1, by1 = int(w * fx1), int(h * fy1)
+                bx2, by2 = int(w * fx2), int(h * fy2)
+                redact_boxes.append((bx1, by1, bx2, by2))
+                detected_fields.append({
+                    "key": key,
+                    "label": doc_type.fields.get(key, DocumentField(key, key, key, False, "medium")).label_es,
+                    "sensitive": True
+                })
 
     if not redact_boxes:
         result_path = filepath + "_redacted.png"
