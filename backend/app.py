@@ -8,7 +8,7 @@ from PIL import Image
 
 from document_analyzer import detect_document_type, apply_minimization, get_field_preview_boxes
 from rgpd_rules import DOCUMENT_TYPES, analyze_necessity
-from ai_detector import detect_document_with_ai, suggest_redactions_with_ai, gemini_available
+from ai_detector import detect_document_with_ai, suggest_redactions_with_ai, ai_available
 from pdf_processor import (
     pdf_to_images, images_to_pdf, redact_pdf_page, redact_pdf_all_pages,
     get_pdf_page_count, get_pdf_page_size, PYMUPDF_AVAILABLE, PDF2IMAGE_AVAILABLE
@@ -52,7 +52,7 @@ def index():
         for fk, fv in v.fields.items()
     }} for k, v in DOCUMENT_TYPES.items()})
     return render_template('index.html', doc_types=doc_types_json,
-                           gemini_available=gemini_available())
+                           ai_available=ai_available())
 
 
 @app.route('/api/analyze', methods=['POST'])
@@ -88,7 +88,7 @@ def analyze():
         page_count = 1
 
     ai_result = None
-    if gemini_available():
+    if ai_available():
         try:
             with open(analyze_path, 'rb') as f:
                 img_bytes = f.read()
@@ -308,7 +308,7 @@ def analyze_general():
     ocr_text = ocr_image_to_text(analyze_path)
 
     ai_suggestions = None
-    if gemini_available():
+    if ai_available():
         try:
             with open(analyze_path, 'rb') as f:
                 img_bytes = f.read()
@@ -329,7 +329,7 @@ def analyze_general():
         "image_height": h,
         "ocr_text": ocr_text[:2000],
         "ai_suggestions": ai_suggestions,
-        "ai_available": gemini_available(),
+        "ai_available": ai_available(),
         "fields": [
             {"key": "full_document", "label": "Documento completo", "sensitive": False},
         ],
