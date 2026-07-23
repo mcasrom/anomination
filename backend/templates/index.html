@@ -4,372 +4,86 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Anonymation · Minimización RGPD</title>
-<meta name="description" content="Anonimiza DNIs, facturas, contratos y documentos oficiales al instante. Cumple con el principio de minimización de datos del RGPD Art. 5.">
 <meta name="theme-color" content="#0f0f13">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Anonymation">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="application-name" content="Anonymation">
-<link rel="manifest" href="/static/manifest.json">
-<link rel="icon" type="image/svg+xml" href="/static/icon-192.svg">
-<link rel="apple-touch-icon" href="/static/icon-192.svg">
 <style>
   :root {
-    --bg: #0f0f13;
-    --surface: #1a1a24;
-    --surface2: #24243a;
-    --accent: #6c5ce7;
-    --accent2: #a29bfe;
-    --danger: #e74c3c;
-    --success: #2ed573;
-    --text: #eaeaea;
-    --text2: #9a9ab0;
+    --bg: #0f0f13; --surface: #1a1a24; --surface2: #24243a;
+    --accent: #6c5ce7; --accent2: #a29bfe; --danger: #e74c3c;
+    --success: #2ed573; --text: #eaeaea; --text2: #9a9ab0;
     --radius: 12px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
-  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
-  header {
-    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
-  }
+  .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+  header { text-align: center; margin-bottom: 2rem; }
   header h1 {
-    font-size: 1.8rem; font-weight: 700;
+    font-size: 2rem; font-weight: 800;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
-  header .sub {
-    color: var(--text2); font-size: 0.9rem; margin-left: auto;
-  }
-  .tabs {
-    display: flex; gap: 0; margin-bottom: 1.5rem;
-    background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;
-    overflow: hidden; border: 1px solid rgba(255,255,255,0.06);
-    border-bottom: none;
-  }
-  .tab-btn {
-    flex: 1; padding: 0.8rem 1rem; text-align: center; cursor: pointer;
-    background: transparent; border: none; color: var(--text2); font-size: 0.9rem;
-    font-weight: 500; transition: all 0.2s; border-bottom: 2px solid transparent;
-  }
-  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-  .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent); background: rgba(108,92,231,0.08); }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  header p { color: var(--text2); margin-top: 0.3rem; font-size: 0.9rem; }
   .card {
-    background: var(--surface);
-    border-radius: 0 0 var(--radius) var(--radius);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid rgba(255,255,255,0.06);
+    background: var(--surface); border-radius: var(--radius);
+    padding: 2rem; border: 1px solid rgba(255,255,255,0.06);
   }
-  .card-top { border-radius: 0; }
-  .card h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent2); }
   .dropzone {
-    border: 2px dashed var(--text2);
-    border-radius: var(--radius);
-    padding: 3rem 2rem;
-    text-align: center;
-    cursor: pointer;
+    border: 2px dashed var(--text2); border-radius: var(--radius);
+    padding: 3rem 2rem; text-align: center; cursor: pointer;
     transition: all 0.3s;
-    position: relative;
   }
-  .dropzone:hover, .dropzone.dragover {
-    border-color: var(--accent);
-    background: rgba(108,92,231,0.08);
-  }
-  .dropzone.has-image { border-style: solid; border-color: var(--accent); cursor: default; }
-  .dropzone.has-image .placeholder { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem 1rem; }
-  .dropzone.has-image .placeholder .icon { font-size: 1.5rem; margin-bottom: 0; }
-  .dropzone.has-image .placeholder p { font-size: 0.8rem; }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+  .dropzone.has-image { border-style: solid; border-color: var(--accent); cursor: default; padding: 1rem; }
   .dropzone input { display: none; }
-  .dropzone .placeholder { color: var(--text2); }
-  .dropzone .placeholder .icon { font-size: 3rem; margin-bottom: 0.5rem; }
-  .preview-container { position: relative; display: inline-block; max-width: 100%; }
-  .preview-container img { max-width: 100%; max-height: 500px; display: block; border-radius: 8px; }
-  .preview-container canvas {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none; border-radius: 8px;
-  }
-  .badge {
-    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
-    font-size: 0.75rem; font-weight: 600;
-  }
-  .badge-necessary { background: rgba(46,213,115,0.2); color: var(--success); }
-  .badge-excessive { background: rgba(231,76,60,0.2); color: var(--danger); }
-  .field-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-  }
-  .field-item {
-    background: var(--surface2);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transition: all 0.2s;
-    cursor: pointer;
-  }
-  .field-item:hover { background: rgba(108,92,231,0.15); }
-  .field-item .label { flex: 1; font-size: 0.9rem; }
-  .field-item .sensitivity {
-    font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 3px; text-transform: uppercase;
-  }
-  .sens-high { background: rgba(231,76,60,0.3); color: #ff6b6b; }
-  .sens-medium { background: rgba(253,203,110,0.3); color: #fdcb6e; }
-  .sens-low { background: rgba(46,213,115,0.3); color: var(--success); }
-  .field-item .toggle {
-    width: 22px; height: 22px; border: 2px solid var(--text2); border-radius: 4px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .field-item.redact .toggle { background: var(--danger); border-color: var(--danger); }
-  .field-item.redact .toggle::after { content: "✕"; color: white; font-size: 0.7rem; font-weight: bold; }
-  .field-item.preserve .toggle::after { content: "✓"; color: var(--success); font-size: 0.8rem; }
-  .field-item.necessary { opacity: 0.6; cursor: not-allowed; }
-  .field-item.necessary .toggle { border-color: var(--success); background: rgba(46,213,115,0.15); }
-  .field-item.necessary .toggle::after { content: "🔒"; font-size: 0.7rem; }
-  .reason-tip { font-size: 0.75rem; color: var(--text2); margin-top: 0.25rem; display: none; }
-  .field-item.redact .reason-tip { display: block; }
-  .controls {
-    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-top: 1rem;
-  }
-  .controls select, .controls button {
-    padding: 0.6rem 1.2rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-    background: var(--surface2); color: var(--text); font-size: 0.9rem; cursor: pointer;
-  }
-  .controls button.primary {
-    background: linear-gradient(135deg, var(--accent), #5b4bd5);
-    border: none; font-weight: 600; transition: opacity 0.2s;
-  }
-  .controls button.primary:hover { opacity: 0.9; }
-  .controls button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .summary-box {
-    background: var(--surface2); border-left: 3px solid var(--accent);
-    padding: 1rem; border-radius: 8px; font-size: 0.9rem; line-height: 1.6; margin: 1rem 0;
-  }
-  .result-section { display: none; }
-  .result-section.visible { display: block; }
-  .result-image { max-width: 100%; max-height: 500px; border-radius: 8px; margin: 1rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-  .download-btn {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.75rem 1.5rem; border-radius: 8px;
-    background: var(--success); color: #000; text-decoration: none; font-weight: 600; margin-top: 0.5rem;
-  }
-  .loading { text-align: center; padding: 2rem; color: var(--text2); }
+  .dropzone .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+  .dropzone p { color: var(--text2); font-size: 0.95rem; }
+  .dropzone .small { font-size: 0.8rem; margin-top: 0.3rem; }
+  .loading { text-align: center; padding: 3rem 0; display: none; }
   .loading .spinner {
-    width: 32px; height: 32px; border: 3px solid var(--surface2);
+    width: 40px; height: 40px; border: 3px solid var(--surface2);
     border-top-color: var(--accent); border-radius: 50%;
     animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--text2); }
+  .loading .detail { color: var(--text2); font-size: 0.8rem; margin-top: 0.3rem; }
+  .result { display: none; }
+  .result-image { max-width: 100%; max-height: 500px; border-radius: 8px; margin: 1.5rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .result-info {
+    display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0;
+  }
+  .result-info span {
+    display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 500;
+  }
+  .tag-doc { background: rgba(108,92,231,0.2); color: var(--accent2); }
+  .tag-redacted { background: rgba(231,76,60,0.2); color: var(--danger); }
+  .tag-preserved { background: rgba(46,213,115,0.2); color: var(--success); }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.9rem 2rem; border-radius: 50px;
+    background: var(--success); color: #000; text-decoration: none;
+    font-weight: 600; font-size: 1rem; margin: 0.5rem 0;
+  }
+  .new-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.9rem 2rem; border-radius: 50px;
+    background: var(--surface2); color: var(--text); text-decoration: none;
+    font-weight: 500; font-size: 1rem; margin: 0.5rem 0; cursor: pointer; border: none;
+  }
   .error-box {
     background: rgba(231,76,60,0.15); border-left: 3px solid var(--danger);
     padding: 1rem; border-radius: 8px; color: #ff6b6b; margin: 1rem 0;
   }
-  footer {
-    text-align: center; color: var(--text2); font-size: 0.8rem;
-    padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2rem;
-  }
-  .mode-selector { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .mode-selector label {
-    padding: 0.4rem 1rem; border-radius: 20px; background: var(--surface2);
-    cursor: pointer; font-size: 0.8rem; border: 1px solid transparent;
-  }
-  .mode-selector input[type="radio"] { display: none; }
-  .mode-selector input:checked + label { border-color: var(--accent); background: rgba(108,92,231,0.2); }
-  .preview-hint { font-size: 0.8rem; color: var(--text2); margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
-  .preview-hint .swatch { display: inline-block; width: 16px; height: 16px; border-radius: 3px; }
-  .swatch-redact { background: rgba(200,40,40,0.6); }
-  .swatch-preserve { background: rgba(46,213,115,0.4); }
-  .guide-table {
-    width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem;
-  }
-  .guide-table th {
-    text-align: left; padding: 0.6rem 0.8rem; background: var(--surface2);
-    color: var(--accent2); font-weight: 600; border-bottom: 2px solid var(--accent);
-  }
-  .guide-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
-  .guide-table tr:hover td { background: rgba(255,255,255,0.02); }
-  .guide-table .doc-group { background: rgba(108,92,231,0.08); font-weight: 600; }
-  .guide-table .doc-group td { color: var(--accent2); padding-top: 0.8rem; }
-  .detection-steps { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem; }
-  .detection-step {
-    display: flex; gap: 1rem; align-items: flex-start;
-    background: var(--surface2); padding: 1rem; border-radius: 8px;
-  }
-  .detection-step .num {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: var(--accent); color: white; display: flex;
-    align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
-  }
-  .detection-step h4 { color: var(--accent2); margin-bottom: 0.3rem; font-size: 0.95rem; }
-  .detection-step p { color: var(--text2); font-size: 0.85rem; line-height: 1.5; }
-  .detect-badge {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;
-  }
-  .detect-ocr { background: rgba(108,92,231,0.2); color: var(--accent2); }
-  .detect-ratio { background: rgba(253,203,110,0.2); color: #fdcb6e; }
-  .detect-ai { background: rgba(46,213,115,0.2); color: var(--success); }
-  .hero {
-    text-align: center; padding: 3rem 1rem 2rem; position: relative; overflow: hidden;
-  }
-  .hero::before {
-    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-    background: radial-gradient(ellipse at 50% 50%, rgba(108,92,231,0.08) 0%, transparent 60%);
-    pointer-events: none;
-  }
-  .hero h1 {
-    font-size: 2.8rem; font-weight: 800; line-height: 1.15; position: relative;
-    background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 50%, #fd79a8 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .hero p {
-    color: var(--text2); font-size: 1.1rem; max-width: 600px; margin: 1rem auto 1.5rem; line-height: 1.6;
-  }
-  .hero-badges {
-    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 1.5rem;
-  }
-  .hero-badges span {
-    padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
-    background: rgba(108,92,231,0.12); border: 1px solid rgba(108,92,231,0.2); color: var(--accent2);
-  }
-  .hero-cta {
-    display: inline-flex; align-items: center; gap: 0.5rem; position: relative;
-    padding: 0.9rem 2rem; border-radius: 50px; font-size: 1rem; font-weight: 600;
-    background: linear-gradient(135deg, var(--accent), #5b4bd5); color: #fff;
-    border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(108,92,231,0.3);
-  }
-  .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(108,92,231,0.45); }
-  .hero-cta-secondary {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.9rem 2rem; border-radius: 50px; font-size: 1rem; font-weight: 500;
-    background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.12);
-    cursor: pointer; transition: all 0.2s;
-  }
-  .hero-cta-secondary:hover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
-  .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-
-  .overlay {
-    position: fixed; inset: 0; z-index: 999;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    animation: fadeIn 0.3s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  .modal {
-    background: var(--surface); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px; padding: 2rem; max-width: 520px; width: 90%;
-    animation: slideUp 0.35s ease; position: relative; max-height: 90vh; overflow-y: auto;
-  }
-  .modal-close {
-    position: absolute; top: 1rem; right: 1rem;
-    width: 32px; height: 32px; border-radius: 50%; border: none;
-    background: var(--surface2); color: var(--text2); cursor: pointer;
-    font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .modal-close:hover { background: var(--danger); color: #fff; }
-  .modal-icon { font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; }
-  .modal h2 { text-align: center; font-size: 1.4rem; color: var(--accent2); margin-bottom: 0.3rem; }
-  .modal .sub { text-align: center; color: var(--text2); font-size: 0.9rem; margin-bottom: 1.5rem; }
-  .funnel-step {
-    display: flex; gap: 1rem; align-items: flex-start;
-    padding: 1rem; border-radius: 12px; margin-bottom: 0.75rem;
-    background: var(--surface2); transition: background 0.2s;
-  }
-  .funnel-step:hover { background: rgba(108,92,231,0.08); }
-  .funnel-step .step-num {
-    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--accent), #5b4bd5);
-    color: #fff; display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 0.9rem;
-  }
-  .funnel-step .step-content h4 { font-size: 0.95rem; color: var(--text); margin-bottom: 0.2rem; }
-  .funnel-step .step-content p { font-size: 0.8rem; color: var(--text2); line-height: 1.5; }
-  .modal-footer { text-align: center; margin-top: 1rem; }
-  .modal-footer button {
-    padding: 0.8rem 2.5rem; border-radius: 50px; font-size: 1rem; font-weight: 600;
-    background: linear-gradient(135deg, var(--accent), #5b4bd5); color: #fff;
-    border: none; cursor: pointer; transition: transform 0.2s;
-  }
-  .modal-footer button:hover { transform: translateY(-2px); }
-  .modal-footer .skip { display: block; margin-top: 0.75rem; color: var(--text2); font-size: 0.8rem; cursor: pointer; background: none; border: none; }
-  .modal-footer .skip:hover { color: var(--text); }
-
-  .hero-compact {
-    display: none; text-align: center; padding: 1.5rem 1rem 1rem;
-  }
-  .hero-compact h1 {
-    font-size: 1.8rem; font-weight: 800;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-
-  @media (hover: none) and (pointer: coarse) {
-    .tab-btn { padding: 0.9rem 0.5rem; font-size: 0.8rem; }
-    .dropzone { padding: 2rem 1rem; min-height: 140px; }
-    .field-item { padding: 0.9rem 0.8rem; min-height: 48px; }
-    .field-item .toggle { width: 26px; height: 26px; min-width: 26px; }
-    .controls select, .controls button { padding: 0.75rem 1rem; min-height: 48px; }
-    .hero-cta, .hero-cta-secondary { padding: 1rem 2rem; font-size: 1.05rem; }
-    .modal-footer button { padding: 1rem 2.5rem; }
-    .funnel-step { padding: 1rem; }
-    .preview-container img { max-height: 300px; }
-  }
+  footer { text-align: center; color: var(--text2); font-size: 0.8rem; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.06); }
   @media (max-width: 480px) {
     .container { padding: 0.75rem; }
-    header { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
-    header h1 { font-size: 1.4rem; }
-    header .sub { font-size: 0.75rem; margin-left: 0; }
-    .tabs { flex-direction: column; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.06); }
-    .tab-btn { border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .tab-btn:last-child { border-bottom: none; }
-    .tab-btn.active { border-bottom-color: var(--accent); }
-    .card { padding: 1rem; }
-    .hero { padding: 1.5rem 0.5rem 1rem; }
-    .hero h1 { font-size: 1.5rem; }
-    .hero p { font-size: 0.85rem; }
-    .hero-badges span { font-size: 0.7rem; padding: 0.2rem 0.6rem; }
-    .hero-cta, .hero-cta-secondary { padding: 0.8rem 1.5rem; font-size: 0.9rem; width: 100%; }
-    .hero-actions { flex-direction: column; }
-    .field-grid { grid-template-columns: 1fr; }
-    .controls { flex-direction: column; }
-    .controls select, .controls button { width: 100%; }
-    .mode-selector { justify-content: center; }
-    .guide-table { font-size: 0.7rem; }
-    .guide-table th, .guide-table td { padding: 0.35rem 0.4rem; }
-    .modal { padding: 1.25rem; margin: 0.5rem; width: auto; }
-    .funnel-step { padding: 0.75rem; }
-    .funnel-step .step-num { width: 30px; height: 30px; font-size: 0.8rem; }
-    .preview-container img { max-height: 250px; }
-    .detection-step { flex-direction: column; }
-    .summary-box { font-size: 0.8rem; }
-    footer { font-size: 0.7rem; padding: 1rem 0; }
-  }
-  @media (min-width: 481px) and (max-width: 768px) {
-    .container { padding: 1rem; }
     header h1 { font-size: 1.5rem; }
-    .hero h1 { font-size: 2rem; }
-    .field-grid { grid-template-columns: repeat(2, 1fr); }
-    .preview-container img { max-height: 350px; }
-  }
-  @media (min-width: 769px) and (max-width: 1024px) {
-    .field-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @supports (padding: env(safe-area-inset-bottom)) {
-    .container { padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right)); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+    .card { padding: 1rem; }
+    .dropzone { padding: 2rem 1rem; }
+    .result-image { max-height: 300px; }
   }
 </style>
 </head>
@@ -377,240 +91,78 @@
 <div class="container">
   <header>
     <h1>◈ Anonymation</h1>
-    <div class="sub">Minimización de datos · RGPD Art. 5</div>
+    <p>Sube un documento y obténlo automáticamente minimizado según RGPD</p>
   </header>
 
-  <div class="hero" id="heroSection">
-    <div class="hero-badges">
-      <span>🛡️ RGPD Art. 5</span>
-      <span>📄 8 documentos</span>
-      <span>🖼️ PDF + Imagen</span>
-      <span>🤖 IA gratuita</span>
-    </div>
-    <h1>Minimiza datos personales<br>en segundos</h1>
-    <p>Anonimiza DNIs, facturas, contratos y documentos oficiales al instante.<br>
-      Cumple con el principio de minimización de datos del RGPD.</p>
-    <div class="hero-actions">
-      <button class="hero-cta" onclick="document.querySelector('[data-tab=anonymize]').click(); document.getElementById('fileInput').click()">
-        🚀 Empezar ahora
-      </button>
-      <button class="hero-cta-secondary" onclick="document.querySelector('[data-tab=howto]').click()">
-        🔍 Cómo funciona
-      </button>
-    </div>
-  </div>
-
-  <div class="overlay" id="welcomeOverlay">
-    <div class="modal">
-      <button class="modal-close" onclick="dismissWelcome()">✕</button>
-      <div class="modal-icon">🛡️</div>
-      <h2>Bienvenido a Anonymation</h2>
-      <p class="sub">Protege tus datos personales antes de compartirlos</p>
-      <div class="funnel-step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h4>📤 Sube tu documento</h4>
-          <p>Arrastra o selecciona un DNI, pasaporte, factura, contrato o PDF. La imagen se redimensiona automáticamente y <strong>no se almacena</strong> de forma permanente.</p>
-        </div>
-      </div>
-      <div class="funnel-step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h4>🔍 Revisa y ajusta</h4>
-          <p>La app detecta automáticamente los campos y te marca cuáles son <strong>excesivos según RGPD</strong>. Puedes activar/desactivar cada campo con un clic.</p>
-        </div>
-      </div>
-      <div class="funnel-step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <h4>⬇ Descarga anonimizado</h4>
-          <p>Elige entre <strong>marca de agua, difuminado o tachado</strong> y descarga tu documento listo para compartir sin riesgos.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button onclick="dismissWelcome()">Comenzar 🚀</button>
-        <button class="skip" onclick="dismissWelcome()">Omitir tutorial</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="anonymize">🛡️ Anonimizar</button>
-    <button class="tab-btn" data-tab="guide">📋 Guía RGPD</button>
-    <button class="tab-btn" data-tab="howto">🔍 Cómo detecta</button>
-  </div>
-
-  <div id="tab-anonymize" class="tab-content active">
-    <div class="card card-top">
-      <h2>📄 Sube un documento de identidad</h2>
-      <p style="color:var(--text2);margin-bottom:1rem;font-size:0.9rem">
-        DNI, NIE, Pasaporte, Carné de Conducir, Tarjeta Sanitaria,
-        Certificado de Empadronamiento, Tarjeta de Residencia.
-        La imagen se procesa localmente y no se almacena de forma permanente.
-      </p>
-      <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept="image/*" />
-        <div class="placeholder" id="placeholder">
-          <div class="icon">🪪</div>
-          <p>Arrastra una imagen aquí o haz clic para seleccionar</p>
-          <p style="font-size:0.8rem;margin-top:0.3rem">PNG, JPG, WEBP, BMP, TIFF</p>
-        </div>
-      </div>
+  <div class="card">
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="image/*,.pdf" />
+      <div class="icon" id="dropIcon">🪪</div>
+      <p id="dropText">Arrastra un documento aquí o haz clic para seleccionar</p>
+      <p class="small">DNI, NIE, Pasaporte, Carné de Conducir, Tarjeta Sanitaria, Empadronamiento — PNG, JPG, PDF</p>
     </div>
 
-    <div id="analysisSection" class="result-section">
-      <div class="card">
-        <h2>🔍 Vista previa en vivo</h2>
-        <p style="color:var(--text2);font-size:0.85rem;margin-bottom:0.5rem">
-          Las zonas <span class="swatch swatch-redact" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle"></span> rojas serán redactadas.
-          Las zonas <span class="swatch swatch-preserve" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle"></span> verdes se conservarán.
-          Haz clic en los campos de abajo para cambiar qué redactar.
-        </p>
-        <div id="previewContainer" class="preview-container" style="display:none">
-          <img id="previewImg" src="" alt="Documento" />
-          <canvas id="previewCanvas"></canvas>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>🔍 Análisis del documento</h2>
-        <div id="analysisContent"></div>
-      </div>
-
-      <div class="card">
-        <h2>⚙️ Campos detectados</h2>
-        <p style="color:var(--text2);font-size:0.85rem;margin-bottom:0.5rem">
-          Los campos <span class="badge badge-necessary">necesarios</span> están bloqueados.
-          Marca los campos <span class="badge badge-excessive">excesivos</span> que quieras redactar.
-          La vista previa se actualiza automáticamente.
-        </p>
-        <div id="fieldsContainer" class="field-grid"></div>
-
-        <div class="controls">
-          <div class="mode-selector">
-            <input type="radio" name="mode" id="modeRedact" value="redact" checked>
-            <label for="modeRedact">⬛ Tachar</label>
-            <input type="radio" name="mode" id="modeBlur" value="blur">
-            <label for="modeBlur">🌀 Difuminar</label>
-            <input type="radio" name="mode" id="modeWatermark" value="watermark">
-            <label for="modeWatermark">🌊 Marca de agua</label>
-          </div>
-          <button class="primary" id="processBtn" disabled>Procesar y ver resultado</button>
-        </div>
-      </div>
-
-      <div class="card" id="resultCard">
-        <h2>✅ Resultado final</h2>
-        <div id="resultContent">
-          <p style="color:var(--text2)">Aún no has procesado el documento. Ajusta los campos y haz clic en "Procesar y ver resultado".</p>
-        </div>
-      </div>
-    </div>
-
-    <div id="loadingSection" class="loading" style="display:none">
+    <div class="loading" id="loadingSection">
       <div class="spinner"></div>
-      <p>Analizando documento...</p>
+      <p id="loadingText">Analizando documento...</p>
+      <p class="detail" id="loadingDetail"></p>
     </div>
 
-    <div id="processLoadingSection" class="loading" style="display:none">
-      <div class="spinner"></div>
-      <p>Aplicando minimización RGPD...</p>
-    </div>
-  </div>
-
-  <div id="tab-guide" class="tab-content">
-    <div class="card card-top">
-      <h2>📋 Guía RGPD: ¿Qué datos son necesarios?</h2>
-      <p style="color:var(--text2);font-size:0.9rem;margin-bottom:0.5rem">
-        Según el <strong>Artículo 5(1)(c) del RGPD</strong> (minimización de datos),
-        solo deben tratarse los datos estrictamente necesarios para la finalidad del trámite.
-        Esta tabla muestra, para cada tipo de documento, qué campos son necesarios y cuáles son excesivos.
-      </p>
-      <div id="rgpdGuideContent"></div>
-    </div>
-  </div>
-
-  <div id="tab-howto" class="tab-content">
-    <div class="card card-top">
-      <h2>🔍 ¿Cómo detecta Anonymation el tipo de documento?</h2>
-      <p style="color:var(--text2);font-size:0.9rem;margin-bottom:1rem">
-        La app usa un sistema híbrido de detección con tres fases. No se envía ninguna imagen a servidores externos.
-      </p>
-      <div class="detection-steps">
-        <div class="detection-step">
-          <div class="num">1</div>
-          <div>
-            <h4>OCR por Tesseract <span class="detect-badge detect-ocr">OCR</span></h4>
-            <p>
-              El motor Tesseract escanea el texto visible en la imagen buscando palabras clave
-              como <strong>"DNI"</strong>, <strong>"PASAPORTE"</strong>, <strong>"CONDUCIR"</strong>,
-              <strong>"NIE"</strong>, <strong>"RESIDENCIA"</strong>, <strong>"SANITARIA"</strong> o
-              <strong>"EMPADRONAMIENTO"</strong>. Cada tipo de documento tiene un diccionario de
-              términos característicos. Se puntúa cada acierto y se selecciona el tipo con mayor
-              coincidencia.
-            </p>
-          </div>
-        </div>
-        <div class="detection-step">
-          <div class="num">2</div>
-          <div>
-            <h4>Proporción de aspecto <span class="detect-badge detect-ratio">RATIO</span></h4>
-            <p>
-              Cada formato de documento tiene una relación ancho/alto característica
-              (p.ej. DNI ~0.68, pasaporte ~0.71, tarjeta sanitaria ~0.62).
-              Si el OCR no da resultados concluyentes, la app usa la proporción como señal secundaria.
-            </p>
-          </div>
-        </div>
-        <div class="detection-step">
-          <div class="num">3</div>
-          <div>
-            <h4>Reglas RGPD por tipo <span class="detect-badge detect-ai">RGPD</span></h4>
-            <p>
-              Una vez identificado el tipo, se aplican las reglas de minimización del RGPD.
-              Cada campo tiene asignada una etiqueta de <strong>necesario</strong> o <strong>excesivo</strong>
-              según el principio de minimización (Art. 5) y la jurisprudencia de la AEPD.
-              El usuario puede ajustar manualmente qué campos redactar.
-            </p>
-          </div>
+    <div class="result" id="resultSection">
+      <div id="resultInfo"></div>
+      <div style="text-align:center">
+        <img id="resultImage" class="result-image" alt="Documento minimizado" />
+        <div>
+          <a id="downloadLink" class="download-btn">⬇ Descargar documento minimizado</a>
+          <button class="new-btn" id="newBtn">← Nuevo documento</button>
         </div>
       </div>
-      <div style="margin-top:1.5rem;padding:1rem;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent)">
-        <h4 style="color:var(--accent2);margin-bottom:0.3rem">Documentos soportados (8)</h4>
-        <div id="docList" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem"></div>
-      </div>
     </div>
+
+    <div id="errorSection" style="display:none"></div>
   </div>
 
   <footer>
-    Anonymation — Prototipo de minimización de datos según RGPD Art. 5.
-    Los archivos subidos se eliminan tras el procesamiento. No se almacenan datos personales.
+    Anonymation — Minimización de datos según RGPD Art. 5. Los archivos se eliminan tras el procesamiento.
   </footer>
 </div>
 
 <script>
-const ALL_DOC_TYPES = {{ doc_types|safe }};
-
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
-const placeholder = document.getElementById('placeholder');
-const analysisSection = document.getElementById('analysisSection');
-const analysisContent = document.getElementById('analysisContent');
-const fieldsContainer = document.getElementById('fieldsContainer');
-const processBtn = document.getElementById('processBtn');
-const resultCard = document.getElementById('resultCard');
-const resultContent = document.getElementById('resultContent');
+const dropIcon = document.getElementById('dropIcon');
+const dropText = document.getElementById('dropText');
 const loadingSection = document.getElementById('loadingSection');
-const processLoadingSection = document.getElementById('processLoadingSection');
-const previewContainer = document.getElementById('previewContainer');
-const previewImg = document.getElementById('previewImg');
-const previewCanvas = document.getElementById('previewCanvas');
-
-let sessionData = null;
-let selectedRedactFields = new Set();
-let originalImageUrl = null;
+const loadingText = document.getElementById('loadingText');
+const loadingDetail = document.getElementById('loadingDetail');
+const resultSection = document.getElementById('resultSection');
+const resultInfo = document.getElementById('resultInfo');
+const resultImage = document.getElementById('resultImage');
+const downloadLink = document.getElementById('downloadLink');
+const newBtn = document.getElementById('newBtn');
+const errorSection = document.getElementById('errorSection');
 
 const MAX_IMAGE_DIM = 1600;
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+newBtn.addEventListener('click', () => {
+  resultSection.style.display = 'none';
+  errorSection.style.display = 'none';
+  dropzone.style.display = 'block';
+  dropIcon.textContent = '🪪';
+  dropText.textContent = 'Arrastra un documento aquí o haz clic para seleccionar';
+  dropzone.classList.remove('has-image');
+  fileInput.value = '';
+});
 
 function resizeImage(file, maxDim) {
   return new Promise((resolve, reject) => {
@@ -626,8 +178,7 @@ function resizeImage(file, maxDim) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(blob => {
-        const resized = new File([blob], file.name, { type: file.type });
-        resolve({ file: resized, dataUrl: canvas.toDataURL(file.type) });
+        resolve({ file: new File([blob], file.name, { type: file.type }), dataUrl: canvas.toDataURL(file.type) });
       }, file.type, 0.92);
     };
     img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
@@ -637,335 +188,54 @@ function resizeImage(file, maxDim) {
   });
 }
 
-// ---- Welcome popup funnel ----
-function dismissWelcome() {
-  const overlay = document.getElementById('welcomeOverlay');
-  overlay.style.opacity = '0';
-  setTimeout(() => overlay.remove(), 300);
-  try { localStorage.setItem('anonymation_welcomed', 'true'); } catch(e) {}
-}
-(function() {
-  try {
-    if (localStorage.getItem('anonymation_welcomed')) {
-      var el = document.getElementById('welcomeOverlay');
-      if (el) el.remove();
-      return;
-    }
-  } catch(e) {}
-  var el = document.getElementById('welcomeOverlay');
-  if (el) {
-    el.addEventListener('click', function(e) {
-      if (e.target === e.currentTarget) dismissWelcome();
-    });
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') dismissWelcome();
-  });
-})();
-
-// ---- Tabs ----
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-  });
-});
-
-// ---- RGPD Guide ----
-function renderGuide() {
-  const container = document.getElementById('rgpdGuideContent');
-  let html = '';
-  for (const [code, doc] of Object.entries(ALL_DOC_TYPES)) {
-    const fields = Object.entries(doc.fields);
-    const necessary = fields.filter(([_, f]) => f.necessary).length;
-    const excessive = fields.filter(([_, f]) => !f.necessary).length;
-    html += `<table class="guide-table"><thead><tr class="doc-group"><td colspan="5">
-      🪪 <strong>${doc.name}</strong> — ${fields.length} campos · ${necessary} necesarios · ${excessive} excesivos
-    </td></tr><tr>
-      <th style="width:28%">Campo</th>
-      <th style="width:10%;text-align:center">RGPD</th>
-      <th style="width:10%;text-align:center">Sensibilidad</th>
-      <th style="width:52%">Motivo (RGPD Art. 5)</th>
-    </tr></thead><tbody>`;
-    for (const [key, field] of fields) {
-      const badge = field.necessary ? 'badge-necessary' : 'badge-excessive';
-      const label = field.necessary ? 'NECESARIO' : 'EXCESIVO';
-      html += `<tr>
-        <td><strong>${field.label}</strong></td>
-        <td style="text-align:center"><span class="badge ${badge}">${label}</span></td>
-        <td style="text-align:center"><span class="sensitivity sens-${field.sensitivity}">${field.sensitivity}</span></td>
-        <td style="color:var(--text2);font-size:0.8rem">${field.reason || 'Campo estrictamente necesario para identificación.'}</td>
-      </tr>`;
-    }
-    html += '</tbody></table><div style="height:1rem"></div>';
-  }
-  container.innerHTML = html;
-}
-renderGuide();
-
-// ---- Document list in "Cómo detecta" tab ----
-(function renderDocList() {
-  const container = document.getElementById('docList');
-  for (const [code, doc] of Object.entries(ALL_DOC_TYPES)) {
-    const span = document.createElement('span');
-    span.className = 'badge';
-    span.style.cssText = 'background:rgba(108,92,231,0.15);color:var(--accent2);padding:0.3rem 0.7rem;font-size:0.8rem';
-    span.textContent = doc.name;
-    container.appendChild(span);
-  }
-})();
-
-// ---- File handling ----
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault(); dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) handleFile(fileInput.files[0]);
-});
-
 function handleFile(file) {
-  if (!file || !file.type.startsWith('image/')) {
-    showError('Por favor, selecciona un archivo de imagen válido.');
+  dropzone.style.display = 'none';
+  errorSection.style.display = 'none';
+  resultSection.style.display = 'none';
+  loadingSection.style.display = 'block';
+  loadingText.textContent = 'Analizando documento...';
+  loadingDetail.textContent = '';
+
+  if (file.type.startsWith('image/')) {
+    resizeImage(file, MAX_IMAGE_DIM).then(({ file: resizedFile }) => {
+      const formData = new FormData();
+      formData.append('file', resizedFile);
+      return fetch('/api/auto-redact', { method: 'POST', body: formData });
+    }).then(r => r.json()).then(showResult).catch(showError);
+  } else {
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/auto-redact', { method: 'POST', body: formData })
+      .then(r => r.json()).then(showResult).catch(showError);
+  }
+}
+
+function showResult(data) {
+  loadingSection.style.display = 'none';
+  if (!data.success) {
+    errorSection.style.display = 'block';
+    errorSection.innerHTML = `<div class="error-box">${data.error || 'Error desconocido'}</div>`;
     return;
   }
-  analysisSection.classList.remove('visible');
-  resultContent.innerHTML = '<p style="color:var(--text2)">Aún no has procesado el documento. Ajusta los campos y haz clic en "Procesar y ver resultado".</p>';
-  loadingSection.style.display = 'block';
-  placeholder.style.display = 'none';
-  previewContainer.style.display = 'none';
-  document.getElementById('heroSection').style.display = 'none';
 
-  resizeImage(file, MAX_IMAGE_DIM).then(({ file: resizedFile, dataUrl }) => {
-    originalImageUrl = dataUrl;
-    previewImg.src = originalImageUrl;
-    dropzone.classList.add('has-image');
-    placeholder.innerHTML = '<div class="icon">✅</div><p>Imagen cargada: ' + file.name + '</p>';
-
-    const formData = new FormData();
-    formData.append('file', resizedFile);
-    return fetch('/api/analyze', { method: 'POST', body: formData });
-  })
-    .then(r => r.json())
-    .then(data => {
-      loadingSection.style.display = 'none';
-      if (!data.success) {
-        showAnalysisError(data);
-        return;
-      }
-      sessionData = data;
-      showAnalysis(data);
-    })
-    .catch(err => {
-      loadingSection.style.display = 'none';
-      showError('Error: ' + err.message);
-    });
-}
-
-function showAnalysis(data) {
-  selectedRedactFields = new Set(data.excessive_fields);
-
-  analysisContent.innerHTML = `
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">
-      <span class="badge" style="background:rgba(108,92,231,0.2);color:var(--accent2)">
-        ${data.document_name}
-      </span>
-      <span class="badge" style="background:rgba(108,92,231,0.2);color:var(--accent2)">
-        Confianza: ${(data.confidence * 100).toFixed(0)}%
-      </span>
-      <span class="badge badge-necessary">${data.necessary_fields.length} necesarios</span>
-      <span class="badge badge-excessive">${data.excessive_fields.length} excesivos</span>
-    </div>
-    <div class="summary-box">${data.analysis.summary}</div>
-  `;
-
-  renderFields(data);
-  processBtn.disabled = false;
-  analysisSection.classList.add('visible');
-
-  updatePreview(data);
-}
-
-function updatePreview(data) {
-  if (!data || !originalImageUrl) return;
-  previewContainer.style.display = 'inline-block';
-
-  const img = previewImg;
-  const canvas = previewCanvas;
-
-  const drawOverlay = () => {
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const rect = img.getBoundingClientRect();
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
-
-    if (!sessionData) return;
-    const allFields = sessionData.analysis.fields;
-    const fieldsToShow = Array.from(selectedRedactFields);
-    if (fieldsToShow.length === 0) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); return; }
-
-    fetch('/api/preview', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id: sessionData.session_id,
-        document_type: sessionData.document_type,
-        fields_to_show: fieldsToShow,
-      }),
-    })
-      .then(r => r.json())
-      .then(previewData => {
-        if (!previewData.success) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const [fieldKey, box] of Object.entries(previewData.boxes)) {
-          const fieldInfo = allFields[fieldKey];
-          const isRedact = selectedRedactFields.has(fieldKey);
-          const x = Math.round(box.x1); const y = Math.round(box.y1);
-          const bw = Math.round(box.x2 - box.x1); const bh = Math.round(box.y2 - box.y1);
-          if (isRedact) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-            ctx.fillRect(x, y, bw, bh);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.lineWidth = 2; ctx.setLineDash([]);
-            ctx.strokeRect(x, y, bw, bh);
-            ctx.fillStyle = 'rgba(200, 40, 40, 0.85)';
-            const label = fieldInfo ? 'EXCESIVO: ' + fieldInfo.label : fieldKey;
-            ctx.font = 'bold 13px sans-serif';
-            const tw = ctx.measureText(label).width;
-            ctx.fillRect(x, y - 20, tw + 10, 20);
-            ctx.fillStyle = '#fff';
-            ctx.fillText(label, x + 5, y - 5);
-          }
-        }
-      })
-      .catch(() => {});
-  };
-
-  if (img.complete) drawOverlay();
-  else img.onload = drawOverlay;
-
-  window.addEventListener('resize', drawOverlay);
-}
-
-function renderFields(data) {
-  fieldsContainer.innerHTML = '';
-  const fields = data.analysis.fields;
-  for (const [key, field] of Object.entries(fields)) {
-    const div = document.createElement('div');
-    div.className = 'field-item preserve';
-    div.dataset.fieldKey = key;
-    if (field.necessary) {
-      div.classList.add('necessary');
-    } else if (selectedRedactFields.has(key)) {
-      div.classList.add('redact');
-    } else {
-      div.classList.add('preserve');
-    }
-    const statusClass = field.necessary ? 'badge-necessary' : 'badge-excessive';
-    const statusText = field.necessary ? 'NECESARIO' : 'EXCESIVO';
-    div.innerHTML = `
-      <div class="toggle"></div>
-      <div style="flex:1">
-        <div class="label">
-          ${field.label}
-          <span class="badge ${statusClass}" style="margin-left:0.4rem">${statusText}</span>
-          <span class="sensitivity sens-${field.sensitivity}">${field.sensitivity}</span>
-        </div>
-        ${field.reason ? `<div class="reason-tip">${field.reason}</div>` : ''}
-      </div>
-    `;
-    if (!field.necessary) {
-      div.addEventListener('click', () => {
-        if (selectedRedactFields.has(key)) { selectedRedactFields.delete(key); div.classList.replace('redact', 'preserve'); }
-        else { selectedRedactFields.add(key); div.classList.replace('preserve', 'redact'); }
-        updatePreview(sessionData);
-      });
-    }
-    fieldsContainer.appendChild(div);
-  }
-}
-
-processBtn.addEventListener('click', () => {
-  if (!sessionData) return;
-  processLoadingSection.style.display = 'block';
-  processBtn.disabled = true;
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-  fetch('/api/redact', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      session_id: sessionData.session_id,
-      document_type: sessionData.document_type,
-      fields_to_redact: Array.from(selectedRedactFields),
-      mode: mode,
-    }),
-  })
-    .then(r => r.json())
-    .then(data => {
-      processLoadingSection.style.display = 'none';
-      processBtn.disabled = false;
-      if (!data.success) { resultContent.innerHTML = `<div class="error-box">${data.error}</div>`; return; }
-      const modeName = { watermark: 'marca de agua', blur: 'difuminado', redact: 'tachado' }[mode] || mode;
-      resultContent.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem">
-          <span class="badge badge-necessary">Conservados: ${data.preserved_fields.length}</span>
-          <span class="badge badge-excessive">Redactados: ${data.redacted_fields.length}</span>
-          <span class="badge" style="background:rgba(108,92,231,0.2);color:var(--accent2)">Modo: ${modeName}</span>
-        </div>
-        <div class="preview-container" style="display:inline-block">
-          <img src="${data.result_url}" class="result-image" alt="Documento minimizado" />
-        </div>
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem">
-          <a href="${data.result_url}" class="download-btn" download="documento_minimizado.png">⬇ Descargar documento minimizado</a>
-          <button class="primary" id="backToEditBtn" style="padding:0.75rem 1.5rem;border-radius:8px;border:none;background:var(--surface2);color:var(--text);cursor:pointer;font-size:0.9rem">← Volver a ajustar campos</button>
-        </div>
-      `;
-      document.getElementById('backToEditBtn').addEventListener('click', () => {
-        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
-        resultContent.innerHTML = '<p style="color:var(--text2);">Resultado anterior. Vuelve a procesar si ajustas los campos.</p>';
-      });
-    })
-    .catch(err => {
-      processLoadingSection.style.display = 'none'; processBtn.disabled = false;
-      resultContent.innerHTML = `<div class="error-box">Error: ${err.message}</div>`;
-    });
-});
-
-function showAnalysisError(data) {
-  analysisContent.innerHTML = `
-    <div class="error-box">
-      <strong>No se pudo detectar el tipo de documento.</strong>
-      <p style="margin-top:0.5rem;font-size:0.85rem;white-space:pre-wrap">${data.ocr_evidence || ''}</p>
-      <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text2)">Sugerencia: asegúrate de que la imagen sea legible y muestre claramente el documento.</p>
+  resultInfo.innerHTML = `
+    <div class="result-info">
+      <span class="tag-doc">${data.document_name}</span>
+      <span class="tag-redacted">Redactados: ${data.redacted_fields.length}</span>
+      <span class="tag-preserved">Conservados: ${data.preserved_fields.length}</span>
     </div>
   `;
-  processBtn.disabled = true;
-  analysisSection.classList.add('visible');
+
+  resultImage.src = data.result_url;
+  downloadLink.href = data.result_url;
+  downloadLink.download = data.download_name || 'documento_minimizado.png';
+  resultSection.style.display = 'block';
 }
 
-function showError(msg) {
+function showError(err) {
   loadingSection.style.display = 'none';
-  analysisContent.innerHTML = `<div class="error-box">${msg}</div>`;
-  analysisSection.classList.add('visible');
-}
-
-// ---- PWA: service worker ----
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
-  });
-}
-
-// ---- PWA: detect standalone mode ----
-if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-  document.getElementById('heroSection').querySelector('.hero-cta').textContent = '📄 Subir documento';
+  errorSection.style.display = 'block';
+  errorSection.innerHTML = `<div class="error-box">Error: ${err.message || 'Error de conexión'}</div>`;
 }
 </script>
 </body>

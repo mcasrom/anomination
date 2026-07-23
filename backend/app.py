@@ -209,17 +209,16 @@ def analyze():
             } for e in deduped]
             json.dump(serializable, f)
 
-    if not ai_fields_data:
-        for key in excessive_keys:
-            if key not in preview_boxes:
-                from document_analyzer import FIELD_BOXES
-                if key in FIELD_BOXES:
-                    fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
-                    preview_boxes[key] = {
-                        "x1": int(img_w * fx1), "y1": int(img_h * fy1),
-                        "x2": int(img_w * fx2), "y2": int(img_h * fy2),
-                        "w": img_w, "h": img_h,
-                    }
+    for key in excessive_keys:
+        if key not in preview_boxes:
+            from document_analyzer import FIELD_BOXES
+            if key in FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
+                preview_boxes[key] = {
+                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                    "w": img_w, "h": img_h,
+                }
 
     result = {
         "success": True,
@@ -348,21 +347,18 @@ def redact():
         boxes_list = []
         ai_fields_path = analyze_path + "_ai_fields.json"
         ai_lookup = {}
-        ai_available_file = False
         if os.path.exists(ai_fields_path):
             with open(ai_fields_path) as f:
                 for af in json.load(f):
                     if "box" in af:
                         ai_lookup[af["key"]] = af["box"]
-            if ai_lookup:
-                ai_available_file = True
 
         for fk in fields:
             if fk in ai_lookup:
                 b = ai_lookup[fk]
                 boxes_list.append((int(b["x1"] * w), int(b["y1"] * h),
                                    int(b["x2"] * w), int(b["y2"] * h)))
-            elif not ai_available_file and fk in FIELD_BOXES:
+            elif fk in FIELD_BOXES:
                 fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
                 boxes_list.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
         if not boxes_list:
@@ -404,6 +400,104 @@ def redact():
         "redacted_fields": fields_to_redact,
         "preserved_fields": [k for k in doc_type.fields if k not in fields_to_redact],
         "mime_type": mime,
+    })
+
+
+@app.route('/api/auto-redact', methods=['POST'])
+def auto_redact():
+    if 'file' not in request.files:
+        return jsonify({"error": "No se envió ningún archivo"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Nombre de archivo vacío"}), 400
+    if not allowed_file(file.filename, pdf_ok=True):
+        return jsonify({"error": f"Formato no soportado. Permitidos: {', '.join(ALLOWED_EXTENSIONS_PDF)}"}), 400
+
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    session_id = f"{uuid.uuid4().hex}.{ext}"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
+    file.save(filepath)
+
+    is_pdf_file = is_pdf(session_id)
+
+    if is_pdf_file:
+        try:
+            images = pdf_to_images(filepath, dpi=200)
+            if not images:
+                return jsonify({"success": False, "error": "No se pudieron leer las páginas del PDF."})
+            analyze_path = filepath + "_page0.png"
+            images[0].save(analyze_path)
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Error al procesar PDF: {str(e)}"})
+    else:
+        analyze_path = filepath
+
+    doc_type = None
+    confidence = 0.5
+    evidence = ""
+
+    if ai_available():
+        try:
+            with open(analyze_path, 'rb') as f:
+                img_bytes = f.read()
+            from document_analyzer import _run_ocr
+            ocr_text = _run_ocr(Image.open(analyze_path))
+            ai_result = detect_document_with_ai(img_bytes, ocr_text=ocr_text)
+            if ai_result and ai_result.get("document_type"):
+                ai_doc_code = ai_result["document_type"]
+                if ai_doc_code in DOCUMENT_TYPES:
+                    doc_type = DOCUMENT_TYPES[ai_doc_code]
+                    confidence = ai_result.get("confidence", 0.5)
+                    evidence = "IA: " + ai_result.get("summary", "")
+        except Exception:
+            pass
+
+    if doc_type is None:
+        doc_type, confidence, evidence = detect_document_type(analyze_path)
+        if doc_type is None:
+            return jsonify({"error": "No se pudo detectar el tipo de documento."}), 400
+
+    excessive_keys = [k for k, v in doc_type.fields.items() if not v.strictly_necessary]
+    preserved_keys = [k for k, v in doc_type.fields.items() if v.strictly_necessary]
+
+    mode = 'redact'
+    from document_analyzer import FIELD_BOXES
+    img = Image.open(analyze_path)
+    w, h = img.size
+
+    def get_boxes(fields):
+        boxes = []
+        ai_fields_path = analyze_path + "_ai_fields.json"
+        ai_lookup = {}
+        if os.path.exists(ai_fields_path):
+            with open(ai_fields_path) as f:
+                for af in json.load(f):
+                    if "box" in af:
+                        ai_lookup[af["key"]] = af["box"]
+        for fk in fields:
+            if fk in ai_lookup:
+                b = ai_lookup[fk]
+                boxes.append((int(b["x1"] * w), int(b["y1"] * h),
+                              int(b["x2"] * w), int(b["y2"] * h)))
+            elif fk in FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
+                boxes.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
+        if not boxes:
+            boxes.append((int(w * 0.4), int(h * 0.3), int(w * 0.9), int(h * 0.9)))
+        return boxes
+
+    redact_boxes = get_boxes(excessive_keys)
+    result_img = apply_minimization(analyze_path, doc_type, excessive_keys, mode=mode, override_boxes=redact_boxes)
+    result_path = filepath + "_redacted.png"
+    result_img.save(result_path)
+
+    return jsonify({
+        "success": True,
+        "result_url": url_for('get_result', filename=os.path.basename(result_path)),
+        "document_name": doc_type.name_es,
+        "redacted_fields": excessive_keys,
+        "preserved_fields": preserved_keys,
+        "download_name": f"anonimizado_{doc_type.code}.png",
     })
 
 
