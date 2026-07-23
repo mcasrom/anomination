@@ -8,15 +8,24 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
 GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-3.1-flash-lite"
+GEMINI_MODEL = "gemini-3.5-flash"
 
 DETECT_VISION_PROMPT = (
     "Analiza esta imagen de un documento de identidad (DNI, NIE, pasaporte, carnet de conducir, "
-    "tarjeta sanitaria, residencia, empadronamiento) o factura/documento oficial. "
-    "Identifica el tipo de documento y las coordenadas de cada campo visible. "
-    "IMPORTANTE: las coordenadas deben ser RELATIVAS (0.0 a 1.0) respecto al ancho y alto de la imagen. "
-    "Cada caja debe rodear EXACTAMENTE el texto de ese campo, SIN incluir texto de campos vecinos.\n"
-    "Devuelve SOLO JSON válido con esta estructura EXACTA:\n"
+    "tarjeta sanitaria, residencia, empadronamiento). "
+    "Identifica todos los campos visibles y sus coordenadas exactas.\n"
+    "IMPORTANTE: coordenadas RELATIVAS (0.0 a 1.0) respecto al ancho y alto de la imagen. "
+    "Cada caja debe rodear EXACTAMENTE el texto de ese campo.\n"
+    "Marca como sensitive=True los campos con datos personales que NO deberían compartirse:\n"
+    "- Numeros de documento (DNI, NIE, pasaporte, licencia, tarjeta sanitaria)\n"
+    "- Direccion completa, Domicilio\n"
+    "- Fecha de nacimiento, Lugar de nacimiento\n"
+    "- Firma, Fotografia\n"
+    "- Nombre de padres\n"
+    "- Datos bancarios, importes (en facturas)\n"
+    "Marca como sensitive=False los campos necesarios para identificación basica como nombre, "
+    "tipo de documento, fecha de validez, nacionalidad (si no es sensible).\n"
+    "Devuelve SOLO JSON valido con esta estructura EXACTA:\n"
     "{\n"
     '  "document_type": "dni|nie|passport|driving_license|residence_card|health_card|padron|invoice|contract|other",\n'
     '  "document_name": "nombre descriptivo en español",\n'
@@ -30,12 +39,7 @@ DETECT_VISION_PROMPT = (
     "Posibles keys: full_name, dni_number, nie_number, card_number, passport_number, license_number, "
     "health_number, support_number, address, dob, gender, nationality, expiration_date, issue_date, "
     "signature, father_name, mother_name, pob, height, eye_color, issuing_authority, categories, "
-    "previous_address, photo, document_type.\n"
-    "Marca como sensitive=True los campos que contengan datos personales excesivos según RGPD:\n"
-    "- DNI/NIE/pasaporte: número de documento, dirección, fecha nacimiento, firma, sexo, nacionalidad, "
-    "nombre de padres, lugar de nacimiento\n"
-    "- Facturas: importes, datos bancarios, direcciones, números de factura\n"
-    "- Contratos: datos personales no esenciales, firmas"
+    "previous_address, photo, document_type."
 )
 
 TEXT_DETECT_PROMPT = (
@@ -136,17 +140,26 @@ def _gemini_available():
 
 def _gemini_chat_completion(image_bytes: bytes, prompt: str, mime_type: str) -> dict:
     import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel(
         GEMINI_MODEL,
-        generation_config={"response_mime_type": "application/json"}
+        generation_config={"response_mime_type": "application/json"},
+        safety_settings={
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
     )
     response = model.generate_content([
         {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(image_bytes).decode()}},
         prompt,
     ])
     if not response.candidates:
-        raise ValueError(f"No candidates returned. Prompt feedback: {response.prompt_feedback}")
+        if response.prompt_feedback:
+            raise ValueError(f"Bloqueado por safety filters: {response.prompt_feedback}")
+        raise ValueError("No candidates returned")
     text = response.candidates[0].content.parts[0].text
     return _parse_json_response(text)
 
