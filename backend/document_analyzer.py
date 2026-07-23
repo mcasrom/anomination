@@ -124,7 +124,8 @@ def get_field_preview_boxes(image_path: str, doc_type: DocumentType,
 
 # ---- Anonymization ----
 
-REDACTION_COLOR = (200, 40, 40, 200)
+REDACTION_COLOR = (200, 40, 40, 255)
+REDACTION_COLOR_WATERMARK = (200, 40, 40, 200)
 WATERMARK_TEXT = "DATOS EXCESIVOS (RGPD)"
 
 
@@ -143,14 +144,18 @@ def redact_field_boxes(image: Image.Image, boxes: list, mode: str = "blur") -> I
             font = ImageFont.load_default()
 
     for (x1, y1, x2, y2) in boxes:
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(image.width, x2), min(image.height, y2)
+        if x2 <= x1 or y2 <= y1:
+            continue
         if mode == "blur":
             region = image.crop((x1, y1, x2, y2))
-            region = region.filter(ImageFilter.GaussianBlur(radius=12))
+            region = region.filter(ImageFilter.GaussianBlur(radius=18))
             image.paste(region, (x1, y1))
         elif mode == "redact":
             draw.rectangle([x1, y1, x2, y2], fill=REDACTION_COLOR)
         elif mode == "watermark":
-            draw.rectangle([x1, y1, x2, y2], fill=REDACTION_COLOR)
+            draw.rectangle([x1, y1, x2, y2], fill=REDACTION_COLOR_WATERMARK)
             cx = (x1 + x2) // 2
             cy = (y1 + y2) // 2
             _, _, tw, th = draw.textbbox((0, 0), WATERMARK_TEXT, font=font)
@@ -163,10 +168,14 @@ def redact_field_boxes(image: Image.Image, boxes: list, mode: str = "blur") -> I
 
 
 def apply_minimization(image_path: str, doc_type: DocumentType,
-                       fields_to_redact: list, mode: str = "watermark") -> Image.Image:
+                       fields_to_redact: list, mode: str = "watermark",
+                       override_boxes: list = None) -> Image.Image:
     img = Image.open(image_path)
-    ocr_text = _run_ocr(img)
-    boxes = _find_field_boxes(img, ocr_text, doc_type, fields_to_redact)
+    if override_boxes is not None:
+        boxes = override_boxes
+    else:
+        ocr_text = _run_ocr(img)
+        boxes = _find_field_boxes(img, ocr_text, doc_type, fields_to_redact)
     return redact_field_boxes(img, boxes, mode=mode)
 
 

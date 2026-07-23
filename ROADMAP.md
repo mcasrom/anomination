@@ -40,13 +40,26 @@
 - [x] Caracteres acentuados corruptos en toda la app (`ningÃºn` → `ningún`)
 - [x] Canvas overlay mal escalado (ahora usa `getBoundingClientRect`)
 - [x] Toggle visual de campos no actualizaba clase CSS
+- [x] Popup de bienvenida rompía todo el JS si ya se había visto (IIFE sin try)
+- [x] Modelo Gemini cambiado de `gemini-2.0-flash-lite` (cuota 0) a `gemini-flash-lite-latest`
+- [x] Redacción cambiada de alpha 200 a 255 (opacidad total en modo tachar)
+- [x] Coordenadas IA + FIELD_BOXES fusionadas (IA primario, FIELD_BOXES respaldo)
+- [x] Preview y redacción usan IA boxes cuando están disponibles
 
-## Próximos hitos
+## Problemas conocidos (no resueltos)
+
+### CRÍTICO — Coordenadas de campos incorrectas
+- [ ] **FIELD_BOXES** son porcentajes inventados que no corresponden a ningún documento real
+- [ ] **Gemini devuelve coordenadas** pero son inconsistentes entre documentos
+- [ ] Sin coordenadas precisas, la redacción cae en lugares equivocados o no se ve
+- [ ] **Solución pendiente**: calibrar FIELD_BOXES con documentos reales o usar modelo ML especializado en layout de documentos (LayoutLM, DocTR, etc.)
+
+### Próximos hitos
 
 ### Inmediatos (Sprint actual)
+- [ ] **CALIBRAR COORDENADAS**: Medir manualmente posiciones de campos en DNI, NIE, Pasaporte reales y actualizar FIELD_BOXES
 - [ ] **Modo "documento genérico" en frontend**: interfaz para seleccionar regiones a redactar en facturas/contratos (dibujar rectángulos sobre la imagen)
 - [ ] **Selector de páginas PDF**: navegación entre páginas con preview individual
-- [ ] **Integración completa de IA en frontend**: mostrar sugerencias de Gemini como preselección de campos a redactar
 - [ ] **Feedback de confianza baja**: si OCR < 40%, mostrar modal pidiendo confirmación manual del tipo de documento
 - [ ] **Limpiar archivos temporales**: job programado que borre uploads > 30 min
 
@@ -64,6 +77,7 @@
 - [ ] Modo "confianza baja" mejorado — si OCR < 50%, pedir confirmación manual del tipo
 - [ ] Sugerir automáticamente propósito del trámite para afinar minimización
 - [ ] Exportar como PDF vectorial con marcas de agua (manteniendo capas de texto)
+- [ ] **Modelo ML especializado** para detección de bounding boxes (LayoutLM, DocTR, YOLO)
 - [ ] **Modo oscuro/claro** (toggle de tema)
 - [ ] **Drag & drop de PDF** con previsualización de páginas en miniatura
 - [ ] **Autocompletado de propósito**: lista de trámites comunes (banco, seguro, alquiler, etc.)

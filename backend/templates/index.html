@@ -647,13 +647,18 @@ function dismissWelcome() {
 (function() {
   try {
     if (localStorage.getItem('anonymation_welcomed')) {
-      document.getElementById('welcomeOverlay').remove();
+      var el = document.getElementById('welcomeOverlay');
+      if (el) el.remove();
+      return;
     }
   } catch(e) {}
-  document.getElementById('welcomeOverlay').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) dismissWelcome();
-  });
-  document.addEventListener('keydown', (e) => {
+  var el = document.getElementById('welcomeOverlay');
+  if (el) {
+    el.addEventListener('click', function(e) {
+      if (e.target === e.currentTarget) dismissWelcome();
+    });
+  }
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') dismissWelcome();
   });
 })();

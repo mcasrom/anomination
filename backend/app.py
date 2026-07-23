@@ -87,46 +87,72 @@ def analyze():
         analyze_path = filepath
         page_count = 1
 
-    ai_result = None
+    ai_fields_data = None
+    ai_boxes = None
+
     if ai_available():
         try:
             with open(analyze_path, 'rb') as f:
                 img_bytes = f.read()
             ai_result = detect_document_with_ai(img_bytes)
+            if ai_result and ai_result.get("document_type"):
+                from rgpd_rules import DOCUMENT_TYPES as DT
+                ai_doc_code = ai_result["document_type"]
+                if ai_doc_code in DT:
+                    doc_type = DT[ai_doc_code]
+                    confidence = ai_result.get("confidence", 0.5)
+                    evidence = "IA: " + ai_result.get("summary", "")
+                    ai_fields_data = ai_result.get("fields", [])
+                else:
+                    doc_type = None
         except Exception:
-            pass
+            ai_result = None
 
-    doc_type, confidence, evidence = detect_document_type(analyze_path)
-
-    if doc_type is None and ai_result and ai_result.get("document_type"):
-        from rgpd_rules import DOCUMENT_TYPES as DT
-        ai_doc_type = ai_result.get("document_type")
-        if ai_doc_type in DT:
-            doc_type = DT[ai_doc_type]
-            confidence = ai_result.get("confidence", 0.5)
-            evidence = f"IA ({ai_result.get('document_name', ai_doc_type)}): {ai_result.get('summary', '')}"
-        else:
+    if doc_type is None:
+        doc_type, confidence, evidence = detect_document_type(analyze_path)
+        if doc_type is None:
             return jsonify({
                 "success": False,
                 "error": "No se pudo detectar el tipo de documento.",
                 "ocr_evidence": evidence,
-                "ai_suggestion": ai_result,
+                "ai_suggestion": ai_result if ai_available() else None,
             })
-
-    if doc_type is None:
-        return jsonify({
-            "success": False,
-            "error": "No se pudo detectar el tipo de documento.",
-            "ocr_evidence": evidence,
-            "ai_suggestion": ai_result,
-        })
 
     analysis = analyze_necessity(doc_type)
     necessary_keys = [k for k, v in doc_type.fields.items() if v.strictly_necessary]
     excessive_keys = [k for k, v in doc_type.fields.items() if not v.strictly_necessary]
 
-    preview_boxes = get_field_preview_boxes(analyze_path, doc_type, excessive_keys)
     img = Image.open(analyze_path)
+    img_w, img_h = img.size
+
+    preview_boxes = {}
+
+    if ai_fields_data:
+        for f in ai_fields_data:
+            key = f.get("key", "")
+            if key in excessive_keys and "box" in f:
+                b = f["box"]
+                preview_boxes[key] = {
+                    "x1": int(b["x1"] * img_w),
+                    "y1": int(b["y1"] * img_h),
+                    "x2": int(b["x2"] * img_w),
+                    "y2": int(b["y2"] * img_h),
+                    "w": img_w,
+                    "h": img_h,
+                }
+        with open(analyze_path + "_ai_fields.json", 'w') as f:
+            json.dump(ai_fields_data, f)
+
+    for key in excessive_keys:
+        if key not in preview_boxes:
+            from document_analyzer import FIELD_BOXES
+            if key in FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
+                preview_boxes[key] = {
+                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                    "w": img_w, "h": img_h,
+                }
 
     result = {
         "success": True,
@@ -139,11 +165,11 @@ def analyze():
         "necessary_fields": necessary_keys,
         "excessive_fields": excessive_keys,
         "preview_boxes": preview_boxes,
-        "image_width": img.size[0],
-        "image_height": img.size[1],
+        "image_width": img_w,
+        "image_height": img_h,
         "is_pdf": is_pdf_file,
         "page_count": page_count,
-        "ai_used": ai_result is not None,
+        "ai_used": ai_fields_data is not None,
     }
 
     if is_pdf_file:
@@ -182,7 +208,34 @@ def preview_boxes():
     from PIL import Image
     img_w, img_h = Image.open(analyze_path).size
 
-    boxes = get_field_preview_boxes(analyze_path, doc_type, fields_to_show)
+    boxes = {}
+    ai_fields_path = analyze_path + "_ai_fields.json"
+    if os.path.exists(ai_fields_path):
+        with open(ai_fields_path) as f:
+            ai_fields = json.load(f)
+        for field in ai_fields:
+            key = field.get("key", "")
+            if key in fields_to_show and "box" in field:
+                b = field["box"]
+                boxes[key] = {
+                    "x1": int(b["x1"] * img_w),
+                    "y1": int(b["y1"] * img_h),
+                    "x2": int(b["x2"] * img_w),
+                    "y2": int(b["y2"] * img_h),
+                    "w": img_w,
+                    "h": img_h,
+                }
+    for key in fields_to_show:
+        if key not in boxes:
+            from document_analyzer import FIELD_BOXES
+            if key in FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
+                boxes[key] = {
+                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                    "w": img_w, "h": img_h,
+                }
+
     return jsonify({
         "success": True,
         "boxes": boxes,
@@ -211,26 +264,47 @@ def redact():
 
     is_pdf_file = is_pdf(session_id)
 
+    analyze_path = filepath
+    if is_pdf_file:
+        p0 = filepath + "_page0.png"
+        if os.path.exists(p0):
+            analyze_path = p0
+
+    from document_analyzer import FIELD_BOXES
+    img = Image.open(analyze_path)
+    w, h = img.size
+
+    def get_field_boxes(fields):
+        boxes_list = []
+        ai_fields_path = analyze_path + "_ai_fields.json"
+        ai_lookup = {}
+        if os.path.exists(ai_fields_path):
+            with open(ai_fields_path) as f:
+                for af in json.load(f):
+                    if "box" in af:
+                        ai_lookup[af["key"]] = af["box"]
+
+        for fk in fields:
+            if fk in ai_lookup:
+                b = ai_lookup[fk]
+                boxes_list.append((int(b["x1"] * w), int(b["y1"] * h),
+                                   int(b["x2"] * w), int(b["y2"] * h)))
+            elif fk in FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
+                boxes_list.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
+        if not boxes_list:
+            boxes_list.append((int(w * 0.4), int(h * 0.3), int(w * 0.9), int(h * 0.9)))
+        return boxes_list
+
     if is_pdf_file and PYMUPDF_AVAILABLE:
         doc_type = DOCUMENT_TYPES.get(doc_type_code)
         if doc_type is None:
             return jsonify({"error": "Tipo de documento no reconocido"}), 400
         if mode not in ('blur', 'redact', 'watermark'):
             mode = 'watermark'
-
-        page_boxes = {0: []}
-        analyze_path = filepath + "_page0.png" if os.path.exists(filepath + "_page0.png") else filepath
-        from document_analyzer import FIELD_BOXES
-        img = Image.open(analyze_path)
-        w, h = img.size
-        for field_key in fields_to_redact:
-            if field_key in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[field_key]
-                page_boxes[0].append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
-
+        page_boxes = {0: get_field_boxes(fields_to_redact)}
         result_path = filepath + "_redacted.pdf"
         redact_pdf_all_pages(filepath, page_boxes, mode=mode, output_path=result_path)
-
         return jsonify({
             "success": True,
             "result_url": url_for('get_result', filename=os.path.basename(result_path)),
@@ -241,17 +315,11 @@ def redact():
     doc_type = DOCUMENT_TYPES.get(doc_type_code)
     if doc_type is None:
         return jsonify({"error": "Tipo de documento no reconocido"}), 400
-
     if mode not in ('blur', 'redact', 'watermark'):
         mode = 'watermark'
 
-    analyze_path = filepath
-    if is_pdf_file:
-        page0 = filepath + "_page0.png"
-        if os.path.exists(page0):
-            analyze_path = page0
-
-    result_img = apply_minimization(analyze_path, doc_type, fields_to_redact, mode=mode)
+    redact_boxes = get_field_boxes(fields_to_redact)
+    result_img = apply_minimization(analyze_path, doc_type, fields_to_redact, mode=mode, override_boxes=redact_boxes)
     result_path = filepath + "_redacted.png"
     result_img.save(result_path)
 

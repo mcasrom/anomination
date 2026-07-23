@@ -8,24 +8,31 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 GROQ_MODEL = "llama-3.2-90b-vision-preview"
-GEMINI_MODEL = "gemini-2.0-flash-lite"
+GEMINI_MODEL = "gemini-flash-lite-latest"
 
 DETECT_PROMPT = (
-    "Analiza esta imagen de un documento de identidad, factura o documento oficial. "
-    "Identifica el tipo de documento y extrae los campos visibles. "
-    "Devuelve SOLO JSON válido con esta estructura exacta:\n"
+    "Analiza esta imagen de un documento de identidad (DNI, NIE, pasaporte, carnet de conducir, "
+    "tarjeta sanitaria, residencia, empadronamiento) o factura/documento oficial. "
+    "Identifica el tipo de documento y las coordenadas de cada campo visible. "
+    "Devuelve SOLO JSON válido con esta estructura EXACTA:\n"
     "{\n"
     '  "document_type": "dni|nie|passport|driving_license|residence_card|health_card|padron|invoice|contract|other",\n'
     '  "document_name": "nombre descriptivo en español",\n'
     '  "confidence": 0.0-1.0,\n'
     '  "fields": [\n'
-    '    {"key": "nombre_campo", "label": "Nombre del campo", "value": "valor extraido", "sensitive": true/false}\n'
+    '    {"key": "full_name", "label": "Nombre completo", "value": "texto visible", "sensitive": false, '
+    '"box": {"x1": 0.0, "y1": 0.0, "x2": 0.0, "y2": 0.0}}\n'
     "  ],\n"
-    '  "sensitive_fields": ["lista de keys sensibles"],\n'
+    '  "sensitive_fields": ["lista de keys marcadas como sensitive"],\n'
     '  "summary": "breve descripción"\n'
     "}\n"
-    "Si es una factura: marca como sensibles importes, datos bancarios, direcciones completas, números de factura.\n"
-    "Si es DNI/NIE/pasaporte: marca número de documento, dirección, fecha nacimiento, firma como sensibles."
+    "IMPORTANTE: cada field DEBE incluir 'box' con coordenadas RELATIVAS (0-1) que correspondan "
+    "a la posición real del campo en la imagen (x1,y1 esquina sup-izq, x2,y2 esquina inf-der).\n"
+    "Marca como sensitive=True los campos que contengan datos personales excesivos según RGPD:\n"
+    "- DNI/NIE/pasaporte: número de documento, dirección, fecha nacimiento, firma, sexo, nacionalidad, "
+    "nombre de padres, lugar de nacimiento\n"
+    "- Facturas: importes, datos bancarios, direcciones, números de factura\n"
+    "- Contratos: datos personales no esenciales, firmas"
 )
 
 REDACT_PROMPT = (
