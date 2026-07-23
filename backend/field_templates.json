@@ -1,0 +1,139 @@
+{
+  "dni": {
+    "name": "DNI / Documento Nacional de Identidad",
+    "aspect_ratio_range": [0.60, 0.75],
+    "fields": {
+      "support_number": [0.32, 0.05, 0.75, 0.13],
+      "dni_number": [0.32, 0.15, 0.75, 0.25],
+      "full_name": [0.32, 0.27, 0.78, 0.38],
+      "dob": [0.32, 0.40, 0.55, 0.48],
+      "gender": [0.57, 0.40, 0.65, 0.48],
+      "nationality": [0.67, 0.40, 0.78, 0.48],
+      "father_name": [0.32, 0.50, 0.55, 0.58],
+      "mother_name": [0.57, 0.50, 0.78, 0.58],
+      "issue_date": [0.32, 0.62, 0.53, 0.70],
+      "expiration_date": [0.55, 0.62, 0.78, 0.70],
+      "address": [0.05, 0.72, 0.75, 0.88],
+      "previous_address": [0.05, 0.82, 0.75, 0.95],
+      "signature": [0.55, 0.88, 0.95, 0.98],
+      "photo": [0.02, 0.02, 0.28, 0.55]
+    }
+  },
+  "nie": {
+    "name": "NIE / Número de Identidad de Extranjero",
+    "aspect_ratio_range": [0.60, 0.75],
+    "fields": {
+      "support_number": [0.32, 0.05, 0.75, 0.13],
+      "nie_number": [0.32, 0.15, 0.75, 0.25],
+      "full_name": [0.32, 0.27, 0.78, 0.38],
+      "dob": [0.32, 0.40, 0.55, 0.48],
+      "gender": [0.57, 0.40, 0.65, 0.48],
+      "nationality": [0.67, 0.40, 0.78, 0.48],
+      "father_name": [0.32, 0.50, 0.55, 0.58],
+      "mother_name": [0.57, 0.50, 0.78, 0.58],
+      "issue_date": [0.32, 0.62, 0.53, 0.70],
+      "expiration_date": [0.55, 0.62, 0.78, 0.70],
+      "address": [0.05, 0.72, 0.75, 0.88],
+      "signature": [0.55, 0.88, 0.95, 0.98],
+      "photo": [0.02, 0.02, 0.28, 0.55]
+    }
+  },
+  "passport": {
+    "name": "Pasaporte",
+    "aspect_ratio_range": [0.65, 0.80],
+    "fields": {
+      "passport_number": [0.05, 0.15, 0.55, 0.28],
+      "full_name": [0.05, 0.30, 0.55, 0.42],
+      "nationality": [0.05, 0.44, 0.35, 0.52],
+      "dob": [0.05, 0.44, 0.55, 0.52],
+      "pob": [0.05, 0.55, 0.55, 0.65],
+      "gender": [0.55, 0.44, 0.65, 0.52],
+      "height": [0.55, 0.55, 0.85, 0.65],
+      "eye_color": [0.55, 0.65, 0.85, 0.72],
+      "expiration_date": [0.55, 0.72, 0.85, 0.80],
+      "issue_date": [0.05, 0.65, 0.55, 0.72],
+      "authority": [0.05, 0.75, 0.55, 0.85],
+      "address": [0.05, 0.85, 0.75, 0.95],
+      "signature": [0.55, 0.85, 0.95, 0.95],
+      "photo": [0.65, 0.05, 0.95, 0.45]
+    }
+  },
+  "generic_passport": {
+    "name": "Pasaporte (otros países)",
+    "aspect_ratio_range": [0.65, 0.80],
+    "fields": {
+      "passport_number": [0.05, 0.15, 0.55, 0.28],
+      "full_name": [0.05, 0.30, 0.55, 0.42],
+      "nationality": [0.05, 0.44, 0.35, 0.52],
+      "dob": [0.05, 0.44, 0.55, 0.52],
+      "pob": [0.05, 0.55, 0.55, 0.65],
+      "gender": [0.55, 0.44, 0.65, 0.52],
+      "expiration_date": [0.55, 0.72, 0.85, 0.80],
+      "authority": [0.05, 0.75, 0.55, 0.85],
+      "signature": [0.55, 0.85, 0.95, 0.95],
+      "photo": [0.65, 0.05, 0.95, 0.45]
+    }
+  },
+  "driving_license": {
+    "name": "Carné de Conducir / Permiso de Circulación",
+    "aspect_ratio_range": [0.65, 0.75],
+    "fields": {
+      "license_number": [0.42, 0.15, 0.78, 0.28],
+      "full_name": [0.05, 0.30, 0.78, 0.42],
+      "dob": [0.05, 0.44, 0.35, 0.52],
+      "pob": [0.05, 0.55, 0.55, 0.65],
+      "categories": [0.05, 0.50, 0.55, 0.60],
+      "expiration_date": [0.42, 0.44, 0.78, 0.52],
+      "issue_date": [0.42, 0.55, 0.78, 0.62],
+      "issuing_authority": [0.05, 0.75, 0.55, 0.85],
+      "address": [0.05, 0.65, 0.78, 0.73],
+      "signature": [0.55, 0.85, 0.95, 0.95],
+      "photo": [0.02, 0.02, 0.38, 0.45]
+    }
+  },
+  "residence_card": {
+    "name": "Tarjeta de Residencia / Residencia UE",
+    "aspect_ratio_range": [0.60, 0.75],
+    "fields": {
+      "card_number": [0.32, 0.15, 0.75, 0.25],
+      "full_name": [0.32, 0.27, 0.78, 0.38],
+      "dob": [0.32, 0.40, 0.55, 0.48],
+      "gender": [0.57, 0.40, 0.65, 0.48],
+      "nationality": [0.67, 0.40, 0.78, 0.48],
+      "expiration_date": [0.55, 0.62, 0.78, 0.70],
+      "issue_date": [0.32, 0.62, 0.53, 0.70],
+      "address": [0.05, 0.72, 0.75, 0.88],
+      "signature": [0.55, 0.88, 0.95, 0.98],
+      "authority": [0.05, 0.82, 0.75, 0.95],
+      "photo": [0.02, 0.02, 0.28, 0.55]
+    }
+  },
+  "health_card": {
+    "name": "Tarjeta Sanitaria / Seguridad Social",
+    "aspect_ratio_range": [0.55, 0.70],
+    "fields": {
+      "health_number": [0.40, 0.22, 0.85, 0.35],
+      "full_name": [0.05, 0.38, 0.85, 0.50],
+      "dob": [0.05, 0.52, 0.45, 0.62],
+      "gender": [0.50, 0.52, 0.60, 0.62],
+      "nationality": [0.62, 0.52, 0.85, 0.62],
+      "expiration_date": [0.40, 0.64, 0.75, 0.72],
+      "address": [0.05, 0.74, 0.85, 0.88],
+      "photo": [0.02, 0.02, 0.35, 0.55]
+    }
+  },
+  "padron": {
+    "name": "Certificado de Empadronamiento",
+    "aspect_ratio_range": [0.65, 0.85],
+    "fields": {
+      "full_name": [0.05, 0.15, 0.55, 0.25],
+      "address": [0.05, 0.28, 0.75, 0.40],
+      "dni_number": [0.05, 0.42, 0.45, 0.50],
+      "dob": [0.50, 0.42, 0.75, 0.50],
+      "gender": [0.05, 0.52, 0.25, 0.58],
+      "nationality": [0.28, 0.52, 0.55, 0.58],
+      "issue_date": [0.55, 0.55, 0.85, 0.62],
+      "previous_address": [0.05, 0.62, 0.75, 0.75]
+    }
+  }
+}

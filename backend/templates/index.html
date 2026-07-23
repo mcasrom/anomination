@@ -73,7 +73,7 @@
   }
   .camera-wrap .controls {
     position: absolute; bottom: 1rem; left: 0; right: 0;
-    display: flex; justify-content: center; gap: 1rem;
+    display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;
   }
   .camera-wrap .controls button {
     padding: 0.8rem 2rem; border-radius: 50px; border: none;
@@ -92,6 +92,53 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading p { color: #9a9ab0; }
   .loading small { color: #6c5ce7; font-size: 0.8rem; display: block; margin-top: 0.5rem; }
+
+  .editor { display: none; }
+  .editor-toolbar {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;
+  }
+  .editor-toolbar button {
+    padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: #9a9ab0; cursor: pointer; font-size: 0.82rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .editor-toolbar button:hover, .editor-toolbar button.active {
+    border-color: #6c5ce7; color: #eaeaea; background: rgba(108,92,231,0.1);
+  }
+  .editor-toolbar button.danger { border-color: rgba(231,76,60,0.3); color: #ff6b6b; }
+  .editor-toolbar button.danger:hover { background: rgba(231,76,60,0.15); }
+  .editor-toolbar button.primary {
+    background: #6c5ce7; color: #fff; border-color: #6c5ce7;
+  }
+  .editor-toolbar button.primary:hover { background: #5a4bd1; }
+
+  .editor-info {
+    color: #9a9ab0; font-size: 0.82rem; margin-bottom: 0.75rem; text-align: center;
+  }
+  .editor-info strong { color: #eaeaea; }
+
+  .canvas-wrap {
+    position: relative; border-radius: 8px; overflow: hidden;
+    background: #000; margin-bottom: 1rem;
+  }
+  .canvas-wrap canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+
+  .field-toggles { margin-bottom: 1rem; }
+  .field-toggles .toggle-row {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.25rem;
+    cursor: pointer; transition: background 0.2s; font-size: 0.85rem;
+  }
+  .field-toggles .toggle-row:hover { background: rgba(255,255,255,0.04); }
+  .field-toggles .toggle-row .color-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .field-toggles .toggle-row .label { flex: 1; color: #eaeaea; }
+  .field-toggles .toggle-row .badge {
+    font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px;
+  }
+  .badge-excessive { background: rgba(231,76,60,0.2); color: #ff6b6b; }
+  .badge-necessary { background: rgba(46,213,115,0.2); color: #2ed573; }
 
   .result { display: none; }
   .result-img {
@@ -123,7 +170,16 @@
     font-size: 0.9rem;
   }
 
-  .rights { margin-top: 2rem; }
+  .disclaimer {
+    background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.2);
+    border-radius: 10px; padding: 1rem 1.25rem; margin: 1.5rem 0;
+  }
+  .disclaimer h3 { color: #ff6b6b; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .disclaimer p { color: #c0a0a0; font-size: 0.8rem; line-height: 1.6; }
+  .disclaimer a { color: #a29bfe; text-decoration: none; }
+  .disclaimer a:hover { text-decoration: underline; }
+
+  .rights { margin-top: 1.5rem; }
   .rights details {
     background: rgba(108,92,231,0.04); border: 1px solid rgba(108,92,231,0.1);
     border-radius: 10px; margin-bottom: 0.5rem; overflow: hidden;
@@ -154,58 +210,75 @@
     .hero h1 { font-size: 1.5rem; }
     .card { padding: 1rem; }
     .dropzone { padding: 2rem 1rem; }
+    .editor-toolbar button { font-size: 0.75rem; padding: 0.4rem 0.7rem; }
   }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="hero">
-    <h1>◈ <span>Anonymation</span></h1>
+    <h1>&#9674; <span>Anonymation</span></h1>
     <p>Protege tus datos personales antes de compartir documentos.</p>
   </div>
 
   <div class="privacy-banner">
-    <h3> Tus datos, tu control</h3>
-    <p>Subes o capturas tu documento, la IA detecta los datos personales, los oculta automáticamente y descargas el resultado. <strong>No almacenamos nada</strong>.</p>
+    <h3>&#9655; Tus datos, tu control</h3>
+    <p>Subes o capturas tu documento. La IA sugiere qué ocultar. Tú decides. Descargas el resultado. <strong>No almacenamos nada</strong>.</p>
     <div class="seal">
-      <span> EU Procesado en Europa</span>
-      <span> IA de Google (Gemini)</span>
-      <span> Sin almacenamiento</span>
-      <span> anonimizacion@viajeinteligencia.com</span>
+      <span>&#9733; Procesado en Europa</span>
+      <span>&#9733; Sin almacenamiento</span>
+      <span>&#9733; Tú controlas qué se redacta</span>
     </div>
   </div>
 
   <div class="card">
     <div class="input-methods">
-      <button id="btnUpload" class="active"> Subir archivo</button>
-      <button id="btnCamera"> Camara</button>
+      <button id="btnUpload" class="active">&#128194; Subir archivo</button>
+      <button id="btnCamera">&#128247; C&aacute;mara</button>
     </div>
 
     <div id="uploadSection">
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="image/*,.pdf" />
-        <div class="icon">🪪</div>
-        <p>Arrastra tu documento aqui o haz clic</p>
-        <p class="formats">DNI · NIE · Pasaporte · Carnet · Tarjeta Sanitaria · PDF</p>
+        <div class="icon">&#128170;</div>
+        <p>Arrastra tu documento aqu&iacute; o haz clic</p>
+        <p class="formats">DNI &middot; NIE &middot; Pasaporte &middot; Carnet &middot; PDF</p>
       </div>
     </div>
 
     <div id="cameraSection" class="camera-wrap">
       <video id="video" autoplay playsinline></video>
       <div class="controls">
-        <button class="btn-capture" id="btnCapture"> Capturar</button>
-        <button class="btn-switch" id="btnSwitchCam"> Cambiar camara</button>
-        <button class="btn-close-cam" id="btnCloseCam">✕</button>
+        <button class="btn-capture" id="btnCapture">&#128247; Capturar</button>
+        <button class="btn-switch" id="btnSwitchCam">Cambiar c&aacute;mara</button>
+        <button class="btn-close-cam" id="btnCloseCam">&#10005;</button>
       </div>
     </div>
 
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <p id="loadText">La IA esta analizando tu documento...</p>
-      <small id="loadSub">Identificando campos con datos personales</small>
+      <p id="loadText">Analizando documento...</p>
+      <small id="loadSub">Detectando tipo de documento y campos</small>
     </div>
 
     <div class="error-box" id="error"></div>
+
+    <div class="editor" id="editor">
+      <div class="editor-info" id="editorInfo">
+        <strong id="docTypeLabel">Documento detectado</strong>
+        &middot; <span id="fieldCountLabel">0 campos</span>
+      </div>
+      <div class="editor-toolbar" id="toolbar">
+        <button id="btnDrawMode" class="active">&#9634; Seleccionar campos</button>
+        <button id="btnDrawManual">&#9998; Dibujar manual</button>
+        <button id="btnClearManual" class="danger">&#128465; Borrar manuales</button>
+        <button id="btnRedactNow" class="primary">&#128270; Redactar seleccionados</button>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+      <div class="field-toggles" id="fieldToggles"></div>
+    </div>
 
     <div class="result" id="result">
       <div class="info" id="info"></div>
@@ -214,60 +287,64 @@
         <div id="fieldsList" class="fields-list"></div>
       </div>
       <div class="actions">
-        <a id="downloadBtn" class="btn btn-download">⬇ Descargar documento seguro</a>
-        <button class="btn btn-new" id="newBtn">← Procesar otro</button>
+        <a id="downloadBtn" class="btn btn-download">&#11015; Descargar documento seguro</a>
+        <button class="btn btn-new" id="newBtn">&#8592; Procesar otro</button>
       </div>
     </div>
   </div>
 
+  <div class="disclaimer">
+    <h3>&#9888; Aviso legal importante</h3>
+    <p>Esta herramienta es un <strong>medio auxiliar</strong> para la minimizaci&oacute;n de datos personales. El usuario asume toda la responsabilidad sobre el uso del documento anonimizado y la verificaci&oacute;n de que los datos redactados se corresponden con los exigidos por el tr&aacute;mite concreto. Esta aplicaci&oacute;n no constituye asesoramiento legal ni sustituye la consulta a un delegado de protecci&oacute;n de datos o a la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Espa&ntilde;ola de Protecci&oacute;n de Datos (AEPD)</a>.</p>
+  </div>
+
   <div class="rights">
     <details>
-      <summary> Que datos se ocultan y por que?</summary>
+      <summary>&#9655; RGPD: Qu&eacute; datos son necesarios y cu&aacute;les excesivos?</summary>
       <div class="body">
-        <p>La IA identifica campos y los clasifica como sensibles o no segun el principio de <strong>minimizacion de datos</strong> (RGPD Art. 5).</p>
-        <p style="margin-top:0.5rem"><strong>✓ Se ocultan:</strong> numero DNI/NIE/pasaporte, direccion, fecha nacimiento, firma, fotografia, datos bancarios, nombres familiares.</p>
-        <p><strong>✓ Se conservan:</strong> nombre, tipo documento, fecha validez, nacionalidad.</p>
+        <p>El <strong>Reglamento General de Protecci&oacute;n de Datos (RGPD)</strong>, aplicable en toda la Uni&oacute;n Europea, establece en su <strong>Art. 5(1)(c)</strong> el principio de <strong>minimizaci&oacute;n de datos</strong>: los datos personales deben ser <em>&laquo;adecuados, pertinentes y limitados a lo necesario&raquo;</em> en relaci&oacute;n con los fines para los que se tratan.</p>
+        <p style="margin-top:0.75rem"><strong>Ley Org&aacute;nica 3/2018 (LOPDGDD)</strong> — desarrollo del RGPD en Espa&ntilde;a — refuerza este principio en su art. 4.</p>
+        <p style="margin-top:0.75rem"><strong>Esquema Nacional de Seguridad (ENS)</strong> — Real Decreto 311/2022 — exige la minimizaci&oacute;n de datos en las relaciones con las Administraciones P&uacute;blicas.</p>
+        <p style="margin-top:0.75rem"><strong>Ejemplo pr&aacute;ctico:</strong> Para acreditar tu identidad en un tr&aacute;mite bancario, la entidad necesita tu <strong>nombre y foto</strong>, pero no tu direcci&oacute;n, firma, fecha de nacimiento o nombre de tus padres. Cada campo adicional que compartes incrementa tu exposici&oacute;n ante un posible robo de identidad o fuga de datos.</p>
       </div>
     </details>
     <details>
-      <summary> Como se procesa?</summary>
+      <summary>&#9655; C&oacute;mo usar esta herramienta paso a paso</summary>
       <div class="body">
         <ol style="padding-left:1.2rem;line-height:1.8">
-          <li>Capturas o subes el documento</li>
-          <li>Se envia a Google Gemini (IA) en servidores UE</li>
-          <li>La IA identifica los campos y decide que es sensible</li>
-          <li>Se tachan en negro los datos sensibles</li>
-          <li>Descargas el resultado</li>
+          <li>Sube o captura tu documento (JPG, PNG, PDF)</li>
+          <li>La herramienta detecta el tipo de documento y marca los campos que <strong>podr&iacute;an</strong> ser excesivos seg&uacute;n el RGPD</li>
+          <li><strong>T&uacute; decides</strong> qu&eacute; redactar: activa/desactiva campos con un clic o dibuja rect&aacute;ngulos manuales sobre &aacute;reas adicionales</li>
+          <li>La app aplica la redacci&oacute;n solo sobre lo que t&uacute; has seleccionado</li>
+          <li>Descargas el documento anonimizado y lo presentas en tu tr&aacute;mite</li>
         </ol>
+        <p style="margin-top:0.75rem;color:#ff6b6b;"><strong>&#9888; Importante:</strong> Revisa siempre el resultado antes de compartirlo. La detecci&oacute;n autom&aacute;tica puede no identificar todos los campos sensibles.</p>
       </div>
     </details>
     <details>
-      <summary> Donde van mis datos?</summary>
+      <summary>&#9655; Referencias legales y de ciberseguridad</summary>
       <div class="body">
-        <p><strong>No almacenamos nada de forma permanente.</strong> El analisis lo realiza Google Gemini en centros de datos de la <strong>Union Europea</strong>. No compartimos datos con terceros. No usamos tus documentos para entrenar modelos.</p>
-        <p style="margin-top:0.5rem"><strong>No somos China ni Estados Unidos.</strong> Operamos bajo legislacion europea.</p>
-      </div>
-    </details>
-    <details>
-      <summary> Cuales son mis derechos?</summary>
-      <div class="body">
-        <p>Tienes derecho a saber que datos se procesan, acceder a la informacion, que se minimicen tus datos, que se eliminen tras el proceso, y contactar con el responsable.</p>
-        <p style="margin-top:0.5rem">Contacto: <a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a></p>
+        <p><strong>RGPD (Reglamento UE 2016/679)</strong> — <a href="https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32016R0679" target="_blank" rel="noopener">Texto completo</a></p>
+        <p><strong>LOPDGDD (Ley Org&aacute;nica 3/2018)</strong> — <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2018-16673" target="_blank" rel="noopener">Texto en BOE</a></p>
+        <p><strong>AEPD (Agencia Espa&ntilde;ola de Protecci&oacute;n de Datos)</strong> — <a href="https://www.aepd.es" target="_blank" rel="noopener">aepd.es</a> — Gu&iacute;as de minimizaci&oacute;n y protecci&oacute;n de datos</p>
+        <p><strong>INCIBE (Instituto Nacional de Ciberseguridad)</strong> — <a href="https://www.incibe.es" target="_blank" rel="noopener">incibe.es</a> — Recursos sobre protecci&oacute;n de datos personales y ciberseguridad para ciudadanos</p>
+        <p><strong>Administraci&oacute;n Digital</strong> — <a href="https://sede.administracion.gob.es" target="_blank" rel="noopener">Sede Electr&oacute;nica</a> — Informaci&oacute;n sobre tr&aacute;mites electr&oacute;nicos seguros</p>
+        <p><strong>Esquema Nacional de Seguridad (ENS)</strong> — <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2022-3903" target="_blank" rel="noopener">Real Decreto 311/2022</a></p>
+        <p style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);padding-top:0.75rem">Esta herramienta se alinea con las recomendaciones del <strong>CCN-STIC 804</strong> (gu&iacute;a de protecci&oacute;n de datos personales del Centro Criptol&oacute;gico Nacional) y las directrices de la <strong>AEPD</strong> sobre minimizaci&oacute;n en la administraci&oacute;n digital.</p>
       </div>
     </details>
   </div>
 
   <footer>
-    <strong>Anonymation</strong> — Minimizacion de datos personales con IA.<br>
-    Procesado temporal en servidores UE. Sin almacenamiento.<br>
-    Contacto: <a href="mailto:anonimizacion@viajeinteligencia.com">anonimizacion@viajeinteligencia.com</a>
+    <strong>Anonymation</strong> &mdash; Herramienta auxiliar para minimizaci&oacute;n de datos personales (RGPD Art. 5).<br>
+    No almacenamos documentos. Procesado temporal en servidores UE. Sin garant&iacute;a legal expl&iacute;cita.<br>
+    Consulte a la <a href="https://www.aepd.es" target="_blank" rel="noopener">AEPD</a> &middot; <a href="https://www.incibe.es" target="_blank" rel="noopener">INCIBE</a> &middot; <a href="https://sede.administracion.gob.es" target="_blank" rel="noopener">Sede Electr&oacute;nica</a>
   </footer>
 </div>
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js');
-}
+(function() {
+'use strict';
 
 const MAX = 1600;
 let stream = null;
@@ -280,12 +357,14 @@ const ld = document.getElementById('loading');
 const lt = document.getElementById('loadText');
 const ls = document.getElementById('loadSub');
 const er = document.getElementById('error');
+const ed = document.getElementById('editor');
 const rs = document.getElementById('result');
 const ri = document.getElementById('resultImg');
 const ii = document.getElementById('info');
 const fl = document.getElementById('fieldsList');
 const db = document.getElementById('downloadBtn');
 const nb = document.getElementById('newBtn');
+
 const btnUpload = document.getElementById('btnUpload');
 const btnCamera = document.getElementById('btnCamera');
 const uploadSection = document.getElementById('uploadSection');
@@ -297,7 +376,7 @@ const btnCloseCam = document.getElementById('btnCloseCam');
 
 btnUpload.onclick = () => { switchMethod('upload'); };
 btnCamera.onclick = () => { switchMethod('camera'); };
-nb.onclick = () => { rs.style.display = 'none'; er.style.display = 'none'; switchMethod(currentMethod); };
+nb.onclick = resetAll;
 
 function switchMethod(method) {
   currentMethod = method;
@@ -318,7 +397,7 @@ async function startCamera() {
     });
     video.srcObject = stream;
   } catch (e) {
-    showError('No se pudo acceder a la camara: ' + e.message);
+    showError('No se pudo acceder a la c&aacute;mara: ' + e.message);
     switchMethod('upload');
   }
 }
@@ -350,8 +429,8 @@ function capturePhoto() {
 dz.onclick = () => fi.click();
 dz.ondragover = e => { e.preventDefault(); dz.style.borderColor = '#6c5ce7'; };
 dz.ondragleave = () => dz.style.borderColor = '#9a9ab0';
-dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = '#9a9ab0'; if (e.dataTransfer.files[0]) start(e.dataTransfer.files[0]); };
-fi.onchange = () => { if (fi.files[0]) start(fi.files[0]); };
+dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = '#9a9ab0'; if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); };
+fi.onchange = () => { if (fi.files[0]) processFile(fi.files[0]); };
 
 function resizeImage(file, max) {
   if (!file.type.startsWith('image/')) return Promise.resolve(file);
@@ -372,46 +451,38 @@ function resizeImage(file, max) {
   });
 }
 
-function start(file) {
-  processFile(file);
-}
-
 function processFile(file) {
   dz.style.display = 'none';
   cameraSection.style.display = 'none';
-  er.style.display = 'none';
+  ed.style.display = 'none';
   rs.style.display = 'none';
+  er.style.display = 'none';
   ld.style.display = 'block';
-  lt.textContent = 'La IA esta analizando tu documento...';
-  ls.textContent = 'Identificando campos con datos personales';
+  lt.textContent = 'Analizando documento...';
+  ls.textContent = 'Detectando tipo de documento y campos';
 
   resizeImage(file, MAX).then(f => {
     const fd = new FormData();
     fd.append('file', f);
-    return fetch('/api/auto-redact', { method: 'POST', body: fd });
+    return fetch('/api/analyze', { method: 'POST', body: fd });
   })
   .then(r => r.json())
   .then(d => {
     ld.style.display = 'none';
-    if (!d.success) { showError(d.error || 'Error al procesar'); return; }
-
-    ii.innerHTML = `
-      <span class="tag tag-doc">${d.document_name || 'Documento'}</span>
-      <span class="tag tag-redacted">${(d.redacted_fields || []).length} datos ocultados</span>
-    `;
-
-    if (d.detected_fields && d.detected_fields.length) {
-      fl.innerHTML = 'Campos detectados: ' + d.detected_fields.map(f =>
-        `<span class="f ${f.sensitive ? 'f-redacted' : 'f-kept'}">${f.label || f.key} ${f.sensitive ? '✕' : '✓'}</span>`
-      ).join(' ');
-    } else {
-      fl.innerHTML = '';
+    if (!d.success) {
+      showError(d.error || 'No se pudo analizar el documento. Usa el modo manual.');
+      return;
     }
 
-    ri.src = d.result_url;
-    db.href = d.result_url;
-    db.download = d.download_name || 'documento_anonimizado.png';
-    rs.style.display = 'block';
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      openEditor(e.target.result, d);
+    };
+    resizeImage(file, MAX).then(f => {
+      const r2 = new FileReader();
+      r2.onload = function(e) { openEditor(e.target.result, d); };
+      r2.readAsDataURL(f);
+    });
   })
   .catch(e => {
     ld.style.display = 'none';
@@ -419,10 +490,403 @@ function processFile(file) {
   });
 }
 
+// --- Editor ---
+
+let editorState = {
+  imageDataUrl: null,
+  img: null,
+  analyzeData: null,
+  fields: [],
+  manualBoxes: [],
+  drawMode: 'select', // 'select' | 'draw'
+  isDrawing: false,
+  drawStart: null,
+  currentRect: null,
+  scaleX: 1,
+  scaleY: 1,
+};
+
+const canvas = document.getElementById('editorCanvas');
+const ctx = canvas.getContext('2d');
+const docTypeLabel = document.getElementById('docTypeLabel');
+const fieldCountLabel = document.getElementById('fieldCountLabel');
+const fieldToggles = document.getElementById('fieldToggles');
+const btnDrawMode = document.getElementById('btnDrawMode');
+const btnDrawManual = document.getElementById('btnDrawManual');
+const btnClearManual = document.getElementById('btnClearManual');
+const btnRedactNow = document.getElementById('btnRedactNow');
+
+function openEditor(dataUrl, data) {
+  editorState.imageDataUrl = dataUrl;
+  editorState.analyzeData = data;
+  editorState.manualBoxes = [];
+  editorState.drawMode = 'select';
+
+  const img = new Image();
+  img.onload = function() {
+    editorState.img = img;
+    ed.style.display = 'block';
+    rs.style.display = 'none';
+    er.style.display = 'none';
+
+    const wrap = document.getElementById('canvasWrap');
+    const maxW = wrap.clientWidth || 600;
+    const scale = Math.min(1, maxW / img.width);
+    canvas.width = img.width * scale;
+    canvas.height = img.height * scale;
+    editorState.scaleX = scale;
+    editorState.scaleY = scale;
+
+    docTypeLabel.textContent = data.document_name || 'Documento';
+
+    const excessive = data.excessive_fields || [];
+    const necessary = data.necessary_fields || [];
+    const allFields = data.analysis ? data.analysis.fields : {};
+    const boxes = data.preview_boxes || {};
+
+    const fieldList = [];
+    for (const key of necessary) {
+      const info = allFields[key] || {};
+      const box = boxes[key];
+      fieldList.push({ key, label: info.label || key, necessary: true, redact: false, box: box });
+    }
+    for (const key of excessive) {
+      const info = allFields[key] || {};
+      const box = boxes[key];
+      fieldList.push({ key, label: info.label || key, necessary: false, redact: true, box: box });
+    }
+    editorState.fields = fieldList;
+    fieldCountLabel.textContent = fieldList.length + ' campos';
+
+    renderToggles();
+    renderCanvas();
+  };
+  img.src = dataUrl;
+}
+
+function renderToggles() {
+  fieldToggles.innerHTML = '';
+  for (const f of editorState.fields) {
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+    row.dataset.key = f.key;
+
+    const dot = document.createElement('span');
+    dot.className = 'color-dot';
+    dot.style.background = f.redact ? '#ff6b6b' : '#2ed573';
+    row.appendChild(dot);
+
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = f.label;
+    row.appendChild(label);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + (f.redact ? 'badge-excessive' : 'badge-necessary');
+    badge.textContent = f.redact ? 'Se redacta' : 'Se conserva';
+    row.appendChild(badge);
+
+    row.onclick = function() {
+      if (f.necessary) return;
+      f.redact = !f.redact;
+      badge.textContent = f.redact ? 'Se redacta' : 'Se conserva';
+      badge.className = 'badge ' + (f.redact ? 'badge-excessive' : 'badge-necessary');
+      dot.style.background = f.redact ? '#ff6b6b' : '#2ed573';
+      renderCanvas();
+    };
+
+    if (f.necessary) row.style.opacity = '0.6';
+    fieldToggles.appendChild(row);
+  }
+}
+
+function renderCanvas() {
+  const img = editorState.img;
+  if (!img) return;
+  const sc = editorState.scaleX;
+  canvas.width = img.width * sc;
+  canvas.height = img.height * sc;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  for (const f of editorState.fields) {
+    if (!f.box || !f.redact) continue;
+    const bx1 = f.box.x1 * sc;
+    const by1 = f.box.y1 * sc;
+    const bx2 = f.box.x2 * sc;
+    const by2 = f.box.y2 * sc;
+    ctx.fillStyle = 'rgba(231, 76, 60, 0.25)';
+    ctx.fillRect(bx1, by1, bx2 - bx1, by2 - by1);
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx1, by1, bx2 - bx1, by2 - by1);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(f.label, bx1 + 4, by1 + 14);
+  }
+
+  for (const box of editorState.manualBoxes) {
+    const bx1 = box.x1 * editorState.scaleX;
+    const by1 = box.y1 * editorState.scaleY;
+    const bx2 = box.x2 * editorState.scaleX;
+    const by2 = box.y2 * editorState.scaleY;
+    ctx.fillStyle = 'rgba(108, 92, 231, 0.2)';
+    ctx.fillRect(bx1, by1, bx2 - bx1, by2 - by1);
+    ctx.strokeStyle = '#a29bfe';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.strokeRect(bx1, by1, bx2 - bx1, by2 - by1);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a29bfe';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Manual', bx1 + 4, by1 + 14);
+  }
+
+  if (editorState.currentRect && editorState.isDrawing) {
+    const r = editorState.currentRect;
+    ctx.fillStyle = 'rgba(108, 92, 231, 0.15)';
+    ctx.fillRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+    ctx.strokeStyle = '#a29bfe';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.strokeRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+    ctx.setLineDash([]);
+  }
+}
+
+// --- Canvas mouse/touch events ---
+
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX || e.touches[0].clientX) - rect.left;
+  const y = (e.clientY || e.touches[0].clientY) - rect.top;
+  return { x: Math.max(0, Math.min(canvas.width, x)), y: Math.max(0, Math.min(canvas.height, y)) };
+}
+
+canvas.onmousedown = function(e) {
+  if (editorState.drawMode !== 'draw') return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  editorState.isDrawing = true;
+  editorState.drawStart = pos;
+  editorState.currentRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+};
+
+canvas.onmousemove = function(e) {
+  if (!editorState.isDrawing) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  editorState.currentRect = {
+    x1: Math.min(editorState.drawStart.x, pos.x),
+    y1: Math.min(editorState.drawStart.y, pos.y),
+    x2: Math.max(editorState.drawStart.x, pos.x),
+    y2: Math.max(editorState.drawStart.y, pos.y),
+  };
+  renderCanvas();
+};
+
+canvas.onmouseup = function(e) {
+  if (!editorState.isDrawing) return;
+  e.preventDefault();
+  editorState.isDrawing = false;
+  const r = editorState.currentRect;
+  if (r && (r.x2 - r.x1) > 5 && (r.y2 - r.y1) > 5) {
+    editorState.manualBoxes.push({
+      x1: r.x1 / editorState.scaleX,
+      y1: r.y1 / editorState.scaleY,
+      x2: r.x2 / editorState.scaleX,
+      y2: r.y2 / editorState.scaleY,
+    });
+  }
+  editorState.currentRect = null;
+  renderCanvas();
+};
+
+canvas.ontouchstart = function(e) {
+  if (editorState.drawMode !== 'draw') return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  editorState.isDrawing = true;
+  editorState.drawStart = pos;
+  editorState.currentRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+};
+
+canvas.ontouchmove = function(e) {
+  if (!editorState.isDrawing) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  editorState.currentRect = {
+    x1: Math.min(editorState.drawStart.x, pos.x),
+    y1: Math.min(editorState.drawStart.y, pos.y),
+    x2: Math.max(editorState.drawStart.x, pos.x),
+    y2: Math.max(editorState.drawStart.x, pos.x),
+  };
+  renderCanvas();
+};
+
+canvas.ontouchend = function(e) {
+  if (!editorState.isDrawing) return;
+  e.preventDefault();
+  editorState.isDrawing = false;
+  const r = editorState.currentRect;
+  if (r && (r.x2 - r.x1) > 5 && (r.y2 - r.y1) > 5) {
+    editorState.manualBoxes.push({
+      x1: r.x1 / editorState.scaleX,
+      y1: r.y1 / editorState.scaleY,
+      x2: r.x2 / editorState.scaleX,
+      y2: r.y2 / editorState.scaleY,
+    });
+  }
+  editorState.currentRect = null;
+  renderCanvas();
+};
+
+canvas.onmouseleave = function() {
+  if (editorState.isDrawing) {
+    editorState.isDrawing = false;
+    const r = editorState.currentRect;
+    if (r && (r.x2 - r.x1) > 5 && (r.y2 - r.y1) > 5) {
+      editorState.manualBoxes.push({
+        x1: r.x1 / editorState.scaleX,
+        y1: r.y1 / editorState.scaleY,
+        x2: r.x2 / editorState.scaleX,
+        y2: r.y2 / editorState.scaleY,
+      });
+    }
+    editorState.currentRect = null;
+    renderCanvas();
+  }
+};
+
+// --- Toolbar actions ---
+
+btnDrawMode.onclick = function() {
+  editorState.drawMode = 'select';
+  btnDrawMode.classList.add('active');
+  btnDrawManual.classList.remove('active');
+  canvas.style.cursor = 'pointer';
+};
+
+btnDrawManual.onclick = function() {
+  editorState.drawMode = 'draw';
+  btnDrawManual.classList.add('active');
+  btnDrawMode.classList.remove('active');
+  canvas.style.cursor = 'crosshair';
+};
+
+btnClearManual.onclick = function() {
+  editorState.manualBoxes = [];
+  renderCanvas();
+};
+
+btnRedactNow.onclick = function() {
+  const data = editorState.analyzeData;
+  const sessionId = data.session_id;
+
+  const fieldsToRedact = editorState.fields.filter(f => f.redact).map(f => f.key);
+  const manualRegions = editorState.manualBoxes.map(b => ({
+    x1: Math.round(b.x1), y1: Math.round(b.y1),
+    x2: Math.round(b.x2), y2: Math.round(b.y2),
+  }));
+
+  if (fieldsToRedact.length === 0 && manualRegions.length === 0) {
+    showError('Selecciona al menos un campo o dibuja un &aacute;rea para redactar.');
+    return;
+  }
+
+  ld.style.display = 'block';
+  lt.textContent = 'Redactando documento...';
+  ls.textContent = 'Aplicando anonimizaci&oacute;n';
+
+  const promises = [];
+
+  if (fieldsToRedact.length > 0) {
+    const p1 = fetch('/api/redact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        document_type: data.document_type,
+        fields_to_redact: fieldsToRedact,
+        mode: 'redact',
+      }),
+    }).then(r => r.json());
+    promises.push(p1);
+  }
+
+  if (manualRegions.length > 0) {
+    const sessionIdGen = sessionId;
+    const p2 = fetch('/api/redact-general', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionIdGen,
+        regions: manualRegions,
+        mode: 'redact',
+      }),
+    }).then(r => r.json());
+    promises.push(p2);
+  }
+
+  Promise.all(promises).then(results => {
+    ld.style.display = 'none';
+    ed.style.display = 'none';
+
+    const lastResult = results[results.length - 1];
+    if (!lastResult.success) {
+      showError(lastResult.error || 'Error al redactar');
+      return;
+    }
+
+    const redactedLabels = fieldsToRedact.map(k => {
+      const f = editorState.fields.find(x => x.key === k);
+      return f ? f.label : k;
+    });
+
+    ii.innerHTML = `
+      <span class="tag tag-doc">${data.document_name || 'Documento'}</span>
+      <span class="tag tag-redacted">${redactedLabels.length + manualRegions.length} &aacute;reas ocultadas</span>
+    `;
+
+    fl.innerHTML = (redactedLabels.length > 0 ? 'Redactado: ' + redactedLabels.map(l =>
+      '<span class="f f-redacted">' + l + ' &#10005;</span>'
+    ).join(' ') : '') + (manualRegions.length > 0 ? ' + ' + manualRegions.length + ' &aacute;rea(s) manual(es)' : '');
+
+    ri.src = lastResult.result_url;
+    db.href = lastResult.result_url;
+    db.download = 'documento_anonimizado.png';
+    rs.style.display = 'block';
+  })
+  .catch(e => {
+    ld.style.display = 'none';
+    showError('Error al redactar: ' + (e.message || e));
+  });
+};
+
 function showError(msg) {
-  er.textContent = msg;
+  er.innerHTML = msg;
   er.style.display = 'block';
 }
+
+function resetAll() {
+  ed.style.display = 'none';
+  rs.style.display = 'none';
+  er.style.display = 'none';
+  ld.style.display = 'none';
+  dz.style.display = 'block';
+  uploadSection.style.display = 'block';
+  cameraSection.style.display = 'none';
+  switchMethod('upload');
+  editorState = {
+    imageDataUrl: null, img: null, analyzeData: null,
+    fields: [], manualBoxes: [], drawMode: 'select',
+    isDrawing: false, drawStart: null, currentRect: null,
+    scaleX: 1, scaleY: 1,
+  };
+}
+
+})();
 </script>
 </body>
 </html>

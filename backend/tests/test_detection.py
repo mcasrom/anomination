@@ -161,12 +161,12 @@ class TestRedaction:
         result = redact_field_boxes(img, boxes, mode="blur")
         assert result.size == (400, 300)
 
-    def test_redact_mode_fills_red(self):
+    def test_redact_mode_fills_black(self):
         img = Image.new("RGB", (400, 300), (255, 255, 255))
         boxes = [(50, 50, 150, 100)]
         result = redact_field_boxes(img, boxes, mode="redact")
         r, g, b = result.getpixel((100, 75))
-        assert r > 150 and g < 100, f"Expected red fill, got RGB({r},{g},{b})"
+        assert r < 50 and g < 50 and b < 50, f"Expected black fill, got RGB({r},{g},{b})"
 
     def test_apply_minimization_with_override_boxes(self):
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
@@ -190,10 +190,10 @@ class TestRedaction:
         result = redact_field_boxes(img, boxes, mode="redact")
         r1, g1, b1 = result.getpixel((100, 105))
         r2, g2, b2 = result.getpixel((100, 210))
-        assert r1 > 150 and g1 < 100
-        assert r2 > 150 and g2 < 100
+        assert r1 < 50 and g1 < 50 and b1 < 50
+        assert r2 < 50 and g2 < 50 and b2 < 50
         r3, g3, b3 = result.getpixel((400, 105))
-        assert r3 > 200, "Outside box should not be red (expected white background)"
+        assert r3 > 200, "Outside box should be white background (unchanged)"
 
     def test_boxes_clipped_to_image(self):
         img = Image.new("RGB", (200, 200), (255, 255, 255))

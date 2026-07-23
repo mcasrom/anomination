@@ -1,47 +1,49 @@
 import re
 import io
+import os
+import json
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import pytesseract
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 from rgpd_rules import DOCUMENT_TYPES, DocumentType
 
 
-FIELD_BOXES = {
-    # DNI / NIE / Residence card format (credit-card size, landscape)
-    # Layout: photo left ~28%, text fields to the right
-    "dni_number": (0.32, 0.15, 0.75, 0.25),
-    "nie_number": (0.32, 0.15, 0.75, 0.25),
-    "card_number": (0.32, 0.15, 0.75, 0.25),
-    "full_name": (0.32, 0.27, 0.78, 0.38),
-    "photo": (0.02, 0.02, 0.28, 0.55),
-    "expiration_date": (0.55, 0.62, 0.78, 0.70),
-    "issue_date": (0.32, 0.62, 0.53, 0.70),
-    "dob": (0.32, 0.40, 0.55, 0.48),
-    "gender": (0.57, 0.40, 0.65, 0.48),
-    "nationality": (0.67, 0.40, 0.78, 0.48),
-    "address": (0.05, 0.72, 0.75, 0.88),
-    "previous_address": (0.05, 0.82, 0.75, 0.95),
-    "father_name": (0.32, 0.50, 0.55, 0.58),
-    "mother_name": (0.57, 0.50, 0.78, 0.58),
-    "signature": (0.55, 0.88, 0.95, 0.98),
-    "support_number": (0.32, 0.05, 0.75, 0.13),
+_TEMPLATES_DIR = os.path.dirname(__file__)
+_TEMPLATES_PATH = os.path.join(_TEMPLATES_DIR, "field_templates.json")
 
-    # Passport format
-    "passport_number": (0.05, 0.15, 0.55, 0.28),
-    "pob": (0.05, 0.55, 0.55, 0.65),
-    "height": (0.55, 0.55, 0.85, 0.65),
-    "eye_color": (0.55, 0.65, 0.85, 0.72),
+_field_templates_cache = None
 
-    # Driving license
-    "license_number": (0.42, 0.15, 0.78, 0.28),
-    "issuing_authority": (0.05, 0.75, 0.55, 0.85),
-    "authority": (0.05, 0.75, 0.55, 0.85),
-    "categories": (0.05, 0.50, 0.55, 0.60),
+def load_field_templates() -> Dict[str, Dict[str, list]]:
+    global _field_templates_cache
+    if _field_templates_cache is not None:
+        return _field_templates_cache
+    if os.path.exists(_TEMPLATES_PATH):
+        with open(_TEMPLATES_PATH, "r", encoding="utf-8") as f:
+            _field_templates_cache = json.load(f)
+    else:
+        _field_templates_cache = {}
+    return _field_templates_cache
 
-    # Health card
-    "health_number": (0.40, 0.22, 0.85, 0.35),
-}
+
+def get_field_boxes_for_type(doc_type_code: str) -> Dict[str, tuple]:
+    templates = load_field_templates()
+    doc_template = templates.get(doc_type_code, {})
+    raw = doc_template.get("fields", {})
+    result = {}
+    for key, coords in raw.items():
+        if isinstance(coords, list) and len(coords) == 4:
+            result[key] = tuple(coords)
+    return result
+
+
+FIELD_BOXES = {}
+_templates = load_field_templates()
+for _doc_code, _doc_data in _templates.items():
+    for _key, _coords in _doc_data.get("fields", {}).items():
+        if isinstance(_coords, list) and len(_coords) == 4:
+            if _key not in FIELD_BOXES:
+                FIELD_BOXES[_key] = tuple(_coords)
 
 
 # ---- Detection ----
@@ -75,7 +77,7 @@ def detect_document_type(image_path: str) -> Tuple[Optional[DocumentType], float
             if score > best_score:
                 best_score = score
                 best_match = doc_type
-                evidence = all_hits + [f"★{k}" for k in key_hits]
+                evidence = all_hits + [f"\u2605{k}" for k in key_hits]
 
     w, h = img.size
     if h > 0:
@@ -122,15 +124,20 @@ def get_field_preview_boxes(image_path: str, doc_type: DocumentType,
                              fields_to_highlight: list) -> dict:
     img = Image.open(image_path)
     w, h = img.size
+    doc_boxes = get_field_boxes_for_type(doc_type.code)
     result = {}
     for field_key in fields_to_highlight:
-        if field_key in FIELD_BOXES:
+        if field_key in doc_boxes:
+            fx1, fy1, fx2, fy2 = doc_boxes[field_key]
+        elif field_key in FIELD_BOXES:
             fx1, fy1, fx2, fy2 = FIELD_BOXES[field_key]
-            result[field_key] = {
-                "x1": int(w * fx1), "y1": int(h * fy1),
-                "x2": int(w * fx2), "y2": int(h * fy2),
-                "w": w, "h": h,
-            }
+        else:
+            continue
+        result[field_key] = {
+            "x1": int(w * fx1), "y1": int(h * fy1),
+            "x2": int(w * fx2), "y2": int(h * fy2),
+            "w": w, "h": h,
+        }
     return result
 
 
@@ -195,9 +202,13 @@ def _find_field_boxes(img: Image.Image, ocr_text: str,
                       doc_type: DocumentType, fields_to_redact: list) -> list:
     w, h = img.size
     boxes = []
+    doc_boxes = get_field_boxes_for_type(doc_type.code)
 
     for field_key in fields_to_redact:
-        if field_key in FIELD_BOXES:
+        if field_key in doc_boxes:
+            fx1, fy1, fx2, fy2 = doc_boxes[field_key]
+            boxes.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
+        elif field_key in FIELD_BOXES:
             fx1, fy1, fx2, fy2 = FIELD_BOXES[field_key]
             boxes.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
 

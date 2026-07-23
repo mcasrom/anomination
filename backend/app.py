@@ -6,8 +6,8 @@ import io
 from flask import Flask, request, jsonify, render_template, send_file, url_for
 from PIL import Image
 
-from document_analyzer import detect_document_type, apply_minimization, get_field_preview_boxes
-from rgpd_rules import DOCUMENT_TYPES, analyze_necessity, map_ai_key, AI_COMPOSITE_KEYS
+from document_analyzer import detect_document_type, apply_minimization, get_field_preview_boxes, get_field_boxes_for_type, FIELD_BOXES as FLAT_FIELD_BOXES
+from rgpd_rules import DOCUMENT_TYPES, DocumentField, analyze_necessity, map_ai_key, AI_COMPOSITE_KEYS
 from ai_detector import detect_document_with_ai, suggest_redactions_with_ai, ai_available
 from pdf_processor import (
     pdf_to_images, images_to_pdf, redact_pdf_page, redact_pdf_all_pages,
@@ -209,16 +209,20 @@ def analyze():
             } for e in deduped]
             json.dump(serializable, f)
 
+    doc_field_boxes = get_field_boxes_for_type(doc_type.code) if doc_type else {}
     for key in excessive_keys:
         if key not in preview_boxes:
-            from document_analyzer import FIELD_BOXES
-            if key in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
-                preview_boxes[key] = {
-                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
-                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
-                    "w": img_w, "h": img_h,
-                }
+            if key in doc_field_boxes:
+                fx1, fy1, fx2, fy2 = doc_field_boxes[key]
+            elif key in FLAT_FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FLAT_FIELD_BOXES[key]
+            else:
+                continue
+            preview_boxes[key] = {
+                "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                "w": img_w, "h": img_h,
+            }
 
     result = {
         "success": True,
@@ -273,6 +277,7 @@ def preview_boxes():
 
     from PIL import Image
     img_w, img_h = Image.open(analyze_path).size
+    doc_field_boxes = get_field_boxes_for_type(doc_type_code)
 
     boxes = {}
     ai_fields_path = analyze_path + "_ai_fields.json"
@@ -296,14 +301,17 @@ def preview_boxes():
     if not has_ai_fields:
         for key in fields_to_show:
             if key not in boxes:
-                from document_analyzer import FIELD_BOXES
-                if key in FIELD_BOXES:
-                    fx1, fy1, fx2, fy2 = FIELD_BOXES[key]
-                    boxes[key] = {
-                        "x1": int(img_w * fx1), "y1": int(img_h * fy1),
-                        "x2": int(img_w * fx2), "y2": int(img_h * fy2),
-                        "w": img_w, "h": img_h,
-                    }
+                if key in doc_field_boxes:
+                    fx1, fy1, fx2, fy2 = doc_field_boxes[key]
+                elif key in FLAT_FIELD_BOXES:
+                    fx1, fy1, fx2, fy2 = FLAT_FIELD_BOXES[key]
+                else:
+                    continue
+                boxes[key] = {
+                    "x1": int(img_w * fx1), "y1": int(img_h * fy1),
+                    "x2": int(img_w * fx2), "y2": int(img_h * fy2),
+                    "w": img_w, "h": img_h,
+                }
 
     return jsonify({
         "success": True,
@@ -339,7 +347,8 @@ def redact():
         if os.path.exists(p0):
             analyze_path = p0
 
-    from document_analyzer import FIELD_BOXES
+    from document_analyzer import FIELD_BOXES as FLAT_FB
+    doc_field_boxes = get_field_boxes_for_type(doc_type_code) if doc_type_code else {}
     img = Image.open(analyze_path)
     w, h = img.size
 
@@ -357,9 +366,12 @@ def redact():
             if fk in ai_lookup:
                 b = ai_lookup[fk]
                 boxes_list.append((int(b["x1"] * w), int(b["y1"] * h),
-                                   int(b["x2"] * w), int(b["y2"] * h)))
-            elif fk in FIELD_BOXES:
-                fx1, fy1, fx2, fy2 = FIELD_BOXES[fk]
+                                    int(b["x2"] * w), int(b["y2"] * h)))
+            elif fk in doc_field_boxes:
+                fx1, fy1, fx2, fy2 = doc_field_boxes[fk]
+                boxes_list.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
+            elif fk in FLAT_FB:
+                fx1, fy1, fx2, fy2 = FLAT_FB[fk]
                 boxes_list.append((int(w * fx1), int(h * fy1), int(w * fx2), int(h * fy2)))
         if not boxes_list:
             boxes_list.append((int(w * 0.4), int(h * 0.3), int(w * 0.9), int(h * 0.9)))
@@ -429,59 +441,66 @@ def auto_redact():
         except Exception as e:
             return jsonify({"success": False, "error": f"Error al procesar PDF: {str(e)}"})
 
-    if not ai_available():
-        return jsonify({"success": False, "error": "IA no disponible (clave API no configurada o sin crédito)."}), 503
+    img = Image.open(analyze_path)
+    w, h = img.size
+
+    doc_type = None
+    confidence = 0
+    evidence = ""
+    doc_name = "Documento"
+    detected_fields = []
+    redact_boxes = []
 
     with open(analyze_path, 'rb') as f:
         img_bytes = f.read()
-    ai_result = detect_document_with_ai(img_bytes)
 
-    if not ai_result or not ai_result.get("fields"):
-        err_msg = "La IA no pudo identificar campos en esta imagen. "
-        err_msg += "Prueba con otra orientación, mejor luz, o un documento más nítido."
-        if ai_result and ai_result.get("error"):
-            err_msg = ai_result["error"]
-        return jsonify({"success": False, "error": err_msg}), 400
+    ocr_text = ocr_image_to_text(analyze_path)
 
-    img = Image.open(analyze_path)
-    w, h = img.size
-    doc_name = ai_result.get("document_name", "Documento")
+    ai_result = None
+    if ai_available():
+        try:
+            ai_result = detect_document_with_ai(img_bytes, ocr_text=ocr_text)
+        except Exception:
+            pass
 
-    def norm_coord(val, dim):
-        if val > 1.5:
-            return val / dim if dim else 0.0
-        return val
+    ai_doc_code = None
+    if ai_result and ai_result.get("document_type"):
+        ai_doc_code = ai_result["document_type"]
+        if ai_doc_code in DOCUMENT_TYPES:
+            doc_type = DOCUMENT_TYPES[ai_doc_code]
+            confidence = ai_result.get("confidence", 0.5)
+            doc_name = ai_result.get("document_name", doc_type.name_es)
+            evidence = "IA: " + ai_result.get("summary", "")
 
-    sensitive_boxes = []
-    detected_fields = []
-    for f in ai_result["fields"]:
-        if "box" not in f:
-            continue
-        ai_key = f.get("key", "")
-        sys_key = map_ai_key(ai_key) or ai_key
-        is_sensitive = f.get("sensitive", False)
-        b = f["box"]
-        rx1 = norm_coord(b["x1"], w)
-        ry1 = norm_coord(b["y1"], h)
-        rx2 = norm_coord(b["x2"], w)
-        ry2 = norm_coord(b["y2"], h)
-        detected_fields.append({"key": sys_key, "label": f.get("label", ""), "sensitive": is_sensitive})
-        if is_sensitive:
-            bw_rel = rx2 - rx1
-            bh_rel = ry2 - ry1
-            bw = bw_rel * w
-            bh = bh_rel * h
-            cx = int((rx1 + rx2) * 0.5 * w)
-            cy = int((ry1 + ry2) * 0.5 * h)
-            half_w = max(int(bw * 0.8), int(w * 0.08))
-            half_h = max(int(bh * 1.0), int(h * 0.025))
-            bx1 = max(0, cx - half_w)
-            by1 = max(0, cy - half_h)
-            bx2 = min(w, cx + half_w)
-            by2 = min(h, cy + half_h)
-            sensitive_boxes.append((bx1, by1, bx2, by2))
+    if doc_type is None:
+        detected, conf, ev = detect_document_type(analyze_path)
+        if detected:
+            doc_type = detected
+            confidence = conf
+            evidence = ev
+            doc_name = doc_type.name_es
 
-    if not sensitive_boxes:
+    doc_field_boxes = get_field_boxes_for_type(doc_type.code) if doc_type else {}
+
+    if doc_type:
+        excessive = list(doc_type.excessive_fields().keys())
+        for key in excessive:
+            if key in doc_field_boxes:
+                fx1, fy1, fx2, fy2 = doc_field_boxes[key]
+            elif key in FLAT_FIELD_BOXES:
+                fx1, fy1, fx2, fy2 = FLAT_FIELD_BOXES[key]
+            else:
+                continue
+            bx1, by1 = int(w * fx1), int(h * fy1)
+            bx2, by2 = int(w * fx2), int(h * fy2)
+            redact_boxes.append((bx1, by1, bx2, by2))
+            detected_fields.append({
+                "key": key,
+                "label": doc_type.fields.get(key, DocumentField(key, key, key, False, "medium")).label_es,
+                "sensitive": True
+            })
+
+    if not redact_boxes:
         result_path = filepath + "_redacted.png"
         img.save(result_path)
         return jsonify({
@@ -489,32 +508,12 @@ def auto_redact():
             "result_url": url_for('get_result', filename=os.path.basename(result_path)),
             "document_name": doc_name,
             "redacted_fields": [],
-            "detected_fields": detected_fields,
-            "download_name": f"anonimizado.png",
-            "warning": "La IA no marcó ningún campo como sensible en esta imagen.",
+            "detected_fields": [],
+            "download_name": "anonimizado.png",
+            "warning": "No se detectaron campos que redactar. Usa el modo manual para seleccionar áreas.",
         })
 
-    # Merge overlapping boxes
-    merged = []
-    for bx1, by1, bx2, by2 in sorted(sensitive_boxes):
-        merged_into = None
-        for i, (mx1, my1, mx2, my2) in enumerate(merged):
-            overlap_x = max(0, min(bx2, mx2) - max(bx1, mx1))
-            overlap_y = max(0, min(by2, my2) - max(by1, my1))
-            if overlap_x > 0 and overlap_y > 0:
-                merged[i] = (min(mx1, bx1), min(my1, by1), max(mx2, bx2), max(my2, by2))
-                merged_into = i
-                break
-            gap_y = max(0, max(by1, my1) - min(by2, my2))
-            if overlap_x > max(0, mx2 - mx1) * 0.3 and gap_y < 10:
-                merged[i] = (min(mx1, bx1), min(my1, by1), max(mx2, bx2), max(my2, by2))
-                merged_into = i
-                break
-        if merged_into is None:
-            merged.append((bx1, by1, bx2, by2))
-    sensitive_boxes = merged
-
-    result_img = apply_minimization(analyze_path, None, [], mode='redact', override_boxes=sensitive_boxes)
+    result_img = apply_minimization(analyze_path, None, [], mode='redact', override_boxes=redact_boxes)
     result_path = filepath + "_redacted.png"
     result_img.save(result_path)
 
@@ -522,9 +521,17 @@ def auto_redact():
         "success": True,
         "result_url": url_for('get_result', filename=os.path.basename(result_path)),
         "document_name": doc_name,
-        "redacted_fields": [f["label"] or f["key"] for f in detected_fields if f["sensitive"]],
+        "document_type": doc_type.code if doc_type else None,
+        "confidence": confidence,
+        "evidence": evidence,
+        "redacted_fields": [f["label"] or f["key"] for f in detected_fields],
         "detected_fields": detected_fields,
-        "download_name": f"anonimizado.png",
+        "download_name": "anonimizado.png",
+        "template_boxes": [
+            {"key": f["key"], "label": f["label"],
+             "x1": b[0], "y1": b[1], "x2": b[2], "y2": b[3]}
+            for f, b in zip(detected_fields, redact_boxes)
+        ] if detected_fields else [],
     })
 
 
