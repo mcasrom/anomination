@@ -418,9 +418,8 @@ def auto_redact():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
     file.save(filepath)
 
-    is_pdf_file = is_pdf(session_id)
-
-    if is_pdf_file:
+    analyze_path = filepath
+    if is_pdf(session_id):
         try:
             images = pdf_to_images(filepath, dpi=200)
             if not images:
@@ -429,82 +428,70 @@ def auto_redact():
             images[0].save(analyze_path)
         except Exception as e:
             return jsonify({"success": False, "error": f"Error al procesar PDF: {str(e)}"})
-    else:
-        analyze_path = filepath
 
-    doc_type = None
-    confidence = 0.5
-    evidence = ""
+    if not ai_available():
+        return jsonify({"success": False, "error": "IA no disponible (clave API no configurada o sin crédito)."}), 503
 
-    if ai_available():
-        try:
-            with open(analyze_path, 'rb') as f:
-                img_bytes = f.read()
-            from document_analyzer import _run_ocr
-            ocr_text = _run_ocr(Image.open(analyze_path))
-            ai_result = detect_document_with_ai(img_bytes, ocr_text=ocr_text)
-            if ai_result and ai_result.get("document_type"):
-                ai_doc_code = ai_result["document_type"]
-                if ai_doc_code in DOCUMENT_TYPES:
-                    doc_type = DOCUMENT_TYPES[ai_doc_code]
-                    confidence = ai_result.get("confidence", 0.5)
-                    evidence = "IA: " + ai_result.get("summary", "")
-        except Exception:
-            pass
+    with open(analyze_path, 'rb') as f:
+        img_bytes = f.read()
+    ai_result = detect_document_with_ai(img_bytes)
 
-    if doc_type is None:
-        doc_type, confidence, evidence = detect_document_type(analyze_path)
-        if doc_type is None:
-            return jsonify({"error": "No se pudo detectar el tipo de documento."}), 400
+    if not ai_result or not ai_result.get("fields"):
+        return jsonify({"success": False, "error": "La IA no pudo identificar campos en esta imagen. Prueba con otra orientación o mejor luz."}), 400
 
-    excessive_keys = [k for k, v in doc_type.fields.items() if not v.strictly_necessary]
-    preserved_keys = [k for k, v in doc_type.fields.items() if v.strictly_necessary]
-
-    mode = 'redact'
-    from document_analyzer import FIELD_BOXES
     img = Image.open(analyze_path)
     w, h = img.size
+    doc_name = ai_result.get("document_name", "Documento")
 
-    def get_boxes(fields):
-        boxes = []
-        ai_fields_path = analyze_path + "_ai_fields.json"
-        if os.path.exists(ai_fields_path):
-            with open(ai_fields_path) as f:
-                ai_fields = json.load(f)
-            for fk in fields:
-                match = [af for af in ai_fields if af.get("key") == fk and "box" in af]
-                if match:
-                    b = match[0]["box"]
-                    boxes.append((int(b["x1"] * w), int(b["y1"] * h),
-                                  int(b["x2"] * w), int(b["y2"] * h)))
-        return boxes
+    def norm_coord(val, dim):
+        if val > 1.5:
+            return val / dim if dim else 0.0
+        return val
 
-    redact_boxes = get_boxes(excessive_keys)
-    if not redact_boxes:
-        from shutil import copyfile
+    sensitive_boxes = []
+    detected_fields = []
+    for f in ai_result["fields"]:
+        if "box" not in f:
+            continue
+        ai_key = f.get("key", "")
+        sys_key = map_ai_key(ai_key) or ai_key
+        is_sensitive = f.get("sensitive", False)
+        b = f["box"]
+        rx1 = norm_coord(b["x1"], w)
+        ry1 = norm_coord(b["y1"], h)
+        rx2 = norm_coord(b["x2"], w)
+        ry2 = norm_coord(b["y2"], h)
+        detected_fields.append({"key": sys_key, "label": f.get("label", ""), "sensitive": is_sensitive})
+        if is_sensitive:
+            sensitive_boxes.append((
+                int(rx1 * w), int(ry1 * h),
+                int(rx2 * w), int(ry2 * h),
+            ))
+
+    if not sensitive_boxes:
         result_path = filepath + "_redacted.png"
         img.save(result_path)
         return jsonify({
             "success": True,
             "result_url": url_for('get_result', filename=os.path.basename(result_path)),
-            "document_name": doc_type.name_es,
+            "document_name": doc_name,
             "redacted_fields": [],
-            "preserved_fields": preserved_keys,
-            "download_name": f"anonimizado_{doc_type.code}.png",
-            "warning": "No se detectaron campos redactables por IA en esta cara del documento.",
+            "detected_fields": detected_fields,
+            "download_name": f"anonimizado.png",
+            "warning": "La IA no marcó ningún campo como sensible en esta imagen.",
         })
 
-    result_img = apply_minimization(analyze_path, doc_type, excessive_keys, mode=mode, override_boxes=redact_boxes)
+    result_img = apply_minimization(analyze_path, None, [], mode='redact', override_boxes=sensitive_boxes)
     result_path = filepath + "_redacted.png"
     result_img.save(result_path)
 
     return jsonify({
         "success": True,
         "result_url": url_for('get_result', filename=os.path.basename(result_path)),
-        "document_name": doc_type.name_es,
-        "redacted_fields": excessive_keys,
-        "preserved_fields": preserved_keys,
-        "download_name": f"anonimizado_{doc_type.code}.png",
+        "document_name": doc_name,
+        "redacted_fields": [f["label"] or f["key"] for f in detected_fields if f["sensitive"]],
+        "detected_fields": detected_fields,
+        "download_name": f"anonimizado.png",
     })
 
 
